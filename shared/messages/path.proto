@@ -1,0 +1,16 @@
+// Messages sent fromm planner to controller
+
+syntax = "proto3";
+
+message SimpleDrive {
+  float speed = 1;
+  float turn = 2;
+}
+
+// message PathPoint {
+
+// }
+
+// message Path {
+
+// }

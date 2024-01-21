@@ -1,0 +1,15 @@
+// Messages sent from client to planner
+
+syntax = "proto3";
+
+enum DriveState {
+  STATE_OFF = 0;
+  STATE_AUTO = 1;
+  STATE_MANUAL = 2;
+}
+
+message DriveCommand {
+  DriveState state = 1;
+  optional float throttle = 2;
+  optional float turn = 3;
+}

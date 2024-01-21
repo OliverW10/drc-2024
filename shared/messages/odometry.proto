@@ -1,0 +1,20 @@
+// Messages sent from controller to planner
+
+syntax = "proto3";
+
+message Odometry {
+  float speed_meters_per_second = 1;
+  float angle_radians = 2;
+  float battery_volts = 3;
+  uint64 time_microseconds = 4;
+  uint32 message_number = 5;
+}
+
+message Diagnostic {
+  float wheel_speed_meters_per_second = 1;
+  float imu_speed_meters_per_second = 2;
+  float imu_accel_meters_per_second_squared = 3;
+  float imu_lateral_accel_meters_per_second_squared = 4;
+  float imu_anglular_rate_radians_per_second = 5;
+  Odometry odometry = 6;
+}
