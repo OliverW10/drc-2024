@@ -1,4 +1,7 @@
 client/messages/
 micro/src/messages/
+micro/build/
 planner/src/messages/
 planner/target/
+sim/Assets/Scripts/Messages/
+**/.vscode/
