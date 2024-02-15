@@ -10,6 +10,6 @@ enum DriveState {
 
 message DriveCommand {
   DriveState state = 1;
-  optional float throttle = 2;
-  optional float turn = 3;
+  float throttle = 2;
+  float turn = 3;
 }

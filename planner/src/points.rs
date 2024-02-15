@@ -17,26 +17,27 @@ mod points{
     enum PointType {
         LEFT,
         RIGHT,
-        OBSTACLE
+        OBSTACLE,
+        ARROW_LEFT,
+        ARROW_RIGHT
     }
 
     pub struct Point {
         pub pos: Pos,
-        pub confidence: f64
+        pub confidence: f64,
+        pub point_type: PointType
     }
 
     trait PointMap {
-        fn get_points(&self, around: Pos, max_dist: f64, point_type: PointType);
+        fn get_points(&self, around: Pos, max_dist: f64);
     }
 
     struct SimplePointMap {
-        left_line: Vec<Point>,
-        right_line: Vec<Point>,
-        obstacles: Vec<Point>
+        all_points: Vec<Point>,
     }
 
     impl PointMap for SimplePointMap {
-        fn get_points(&self, around: Pos, max_dist: f64, point_type: PointType){
+        fn get_points(&self, around: Pos, max_dist: f64) -> Vec<Point>{
             let relevant_points = match point_type {
                 PointType::LEFT => self.left_line,
                 PointType::RIGHT => self.right_line,
@@ -53,13 +54,11 @@ mod points{
     }
 
     struct GridPointMap<N: usize>{
-        left_line_grid: [[Vec<Point>; N]; N],
-        right_line_grid: [[Vec<Point>; N]; N],
-        obstacles_grid: [[Vec<Point>; N]; N],
+        grid: [[Vec<Point>; N]; N], // 2d array of vectors of points
     }
 
     impl PointMap for GridPointMap {
-        fn get_points(&self, around: Pos, max_dist: f64, point_type: PointType){
+        fn get_points(&self, around: Pos, max_dist: f64) -> Vec<Point>{
             
         }
     }

@@ -4,7 +4,7 @@ syntax = "proto3";
 
 message SimpleDrive {
   float speed = 1;
-  float turn = 2;
+  float curvature = 2;
 }
 
 // message PathPoint {

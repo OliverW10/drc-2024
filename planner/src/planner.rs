@@ -27,11 +27,10 @@
 
 // https://en.wikipedia.org/wiki/Motion_planning
 
-use points::{
-    Pos,
-    Point
-};
+use std::collections::BinaryHeap;
+// use std::cmp::Ordering;
 
+#[derive(Copy, Clone, PartialEq)]
 pub struct DriveState {
     pos: Pos,
     angle: f64, // angle of the car
@@ -104,7 +103,7 @@ fn distance(start: Pos, state: DriveState, points: Vec<Point>) -> f64{
     total_weight
 }
 
-fn branch(state: DriveState) -> Vec<DriveState> {
+fn get_next_states(state: DriveState) -> Vec<DriveState> {
     let mut output = Vec::new();
     // both per timestep
     let max_turn_diff = 0.2; // radians
@@ -125,3 +124,9 @@ fn branch(state: DriveState) -> Vec<DriveState> {
     output
 }
 
+fn pathfind(start_state: DriveState, points: PointMap) -> () {
+    // https://doc.rust-lang.org/std/collections/binary_heap/index.html
+    let open_set = BinaryHeap::new();
+    open_set.push(start_state);
+    get_next_states();
+}

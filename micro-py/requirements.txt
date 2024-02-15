@@ -1,0 +1,3 @@
+pure-protobuf
+pygame
+micropython-rp2-pico_w-stubs
