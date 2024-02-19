@@ -2,6 +2,8 @@
 
 syntax = "proto3";
 
+package messages.path;
+
 message SimpleDrive {
   float speed = 1;
   float curvature = 2;

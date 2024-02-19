@@ -1,6 +1,7 @@
 // Messages sent from client to planner
 
 syntax = "proto3";
+package messages.commands;
 
 enum DriveState {
   STATE_OFF = 0;

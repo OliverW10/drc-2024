@@ -1,0 +1,12 @@
+// Messages sent from the planner to the client
+// should just be whats absolutely nessisary for operation as planner should log required info for debugging and replay
+
+syntax = "proto3";
+package messages.diagnostic;
+
+message Diagnostic {
+  float actual_speed = 1; // to know if the encoder and drive motor is working
+  float actual_turn = 2; // to know if the servo is working
+  float mcu_latency = 3; // to know if its connected
+  float voltage = 4; // to know what the battery is at
+}

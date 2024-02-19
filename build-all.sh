@@ -1,6 +1,10 @@
 
 pushd ./shared
 ./build_proto.sh
-pop
-# build planner
+popd
+
+pushd ./planner
+cargo build
+popd
+
 # build micro and deploy to pico
