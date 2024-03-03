@@ -9,7 +9,7 @@ edition = "2021"
 opencv = "0.88.8"
 rppal = "0.17.1"
 prost = "0.12"
-bytes = "1.0"
+uom = "0.35.0"
 
 [build-dependencies]
 prost-build = "0.12"

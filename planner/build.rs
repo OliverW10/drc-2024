@@ -1,4 +1,4 @@
-use std::{io::Result};
+use std::io::Result;
 
 fn main() -> Result<()> {
     // let path = std::env::current_dir().expect("msg");
