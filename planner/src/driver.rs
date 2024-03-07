@@ -1,7 +1,7 @@
 use crate::messages::path::SimpleDrive;
 
 pub trait IDriver {
-    fn drive(command: SimpleDrive);
+    fn drive(&self, command: SimpleDrive);
 }
 
 pub struct NetworkDriver {}
@@ -9,13 +9,17 @@ pub struct NetworkDriver {}
 impl NetworkDriver {}
 
 impl IDriver for NetworkDriver {
-    fn drive(command: SimpleDrive) {}
+    fn drive(&self, command: SimpleDrive) {}
 }
 
 pub struct SerialDriver {}
 
-impl SerialDriver {}
+impl SerialDriver {
+    pub fn new() -> SerialDriver {
+        SerialDriver {}
+    }
+}
 
 impl IDriver for SerialDriver {
-    fn drive(command: SimpleDrive) {}
+    fn drive(&self, command: SimpleDrive) {}
 }

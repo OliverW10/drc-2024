@@ -1,67 +1,149 @@
 use std::cmp::min;
 
 use opencv::{
-    core::Mat,
-    imgproc::{find_contours, ContourApproximationModes, RetrievalModes},
+    core::{in_range, Mat, Scalar, VecN, CV_8UC1},
+    imgproc::{find_contours, threshold, ContourApproximationModes, RetrievalModes},
     types::VectorOfVectorOfPoint,
 };
+use rand::Rng;
 
 use crate::{
     planner::DriveState,
     points::{Point, PointMap},
 };
 
-pub enum LineType {
-    LEFT,
-    RIGHT,
+pub struct ColourRange {
+    low: VecN<u8, 3>,
+    high: VecN<u8, 3>,
 }
 
-// stored between frames to reduce memory allocation
+mod colours {
+    use opencv::core::VecN;
+
+    use super::ColourRange;
+
+    // TODO: use config file
+    const fn c<T>(a: T, b: T, c: T) -> VecN<T, 3> {
+        VecN::<T, 3> { 0: [a, b, c]}
+    }
+    const fn r(l: VecN<u8, 3>, h: VecN<u8, 3>) -> ColourRange {
+        ColourRange { low: l, high: h}
+    }
+    pub const YELLOW_MASK: ColourRange = r(c(16, 15, 90), c(45, 255, 255));
+    pub const BLUE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+}
+
+pub enum ObstacleType {
+    LEFT,
+    RIGHT,
+    ARROW,
+    BOX,
+    CAR,
+}
+
+pub trait ObjectFinder {
+    fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error>;
+}
+
+// Finds points along the edges of something
 pub struct LineFinder {
+    obstacle_type: ObstacleType,
+    colour: ColourRange,
+    // stored between frames to reduce memory allocation
     contours: VectorOfVectorOfPoint,
-    mask: Option<Mat>,
-    colour: LineType,
+    mask: Mat,
 }
 
 impl LineFinder {
-    pub fn new(colour: LineType) -> LineFinder {
+    pub fn new(obstacle_type: ObstacleType, colour: ColourRange) -> LineFinder {
         LineFinder {
             contours: VectorOfVectorOfPoint::new(),
-            mask: None,
+            mask: Mat::default(),
+            obstacle_type: obstacle_type,
             colour: colour,
         }
     }
+    fn is_valid_contour(border_points: Vector<Point>) -> bool {
+        true
+    }
+}
 
-    pub fn get_points_for_line(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, ()> {
+impl ObjectFinder for LineFinder {
+    fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> {
+        in_range(image, &self.colour.low, &self.colour.high, &mut self.mask)?;
         let _ = find_contours(
-            image,
+            &self.mask,
             &mut self.contours,
             RetrievalModes::RETR_EXTERNAL.into(),
             ContourApproximationModes::CHAIN_APPROX_NONE.into(),
             opencv::core::Point { x: 0, y: 0 },
-        );
-        Err(())
+        )?;
+        let mut result = vec![];
+        const TAKE_EVERY: usize = 10;
+        let mut rng = rand::thread_rng();
+        for contour in self.contours {
+            if LineFinder::is_valid_contour(contour) {
+                let skip = rng.gen_range(0..TAKE_EVERY);
+                let new_points = contour.iter().skip(skip).step_by(TAKE_EVERY);
+                result.extend(new_points);
+            }
+        }
+        Ok(result)
     }
 }
+
+// Finds points along just the bottom edge of something
+struct ObstacleFinder {
+
+}
+impl ObstacleFinder {
+    pub fn new(obstacle_type: ObstacleType, colour: ColourRange) -> ObstacleFinder {
+        ObstacleFinder {}
+    }
+}
+impl ObjectFinder for ObstacleFinder {
+    fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> { Ok(vec![]) }
+}
+
+struct ArrowFinder {
+
+}
+impl ArrowFinder {
+    pub fn new() -> ArrowFinder {
+        ArrowFinder {}
+    }
+}
+impl ObjectFinder for ArrowFinder {
+    fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> { Ok(vec![]) }
+}
+
 pub struct Vision {
-    // points: Box<dyn PointMap>,
-    left_finder: LineFinder,
-    right_finder: LineFinder,
+    point_finders: Vec<Box<dyn ObjectFinder>>,
 }
 
 impl Vision {
     pub fn new() -> Vision {
+        let mut point_finders: Vec<Box<dyn ObjectFinder>> = Vec::new();
+        point_finders.push(Box::new(LineFinder::new(ObstacleType::LEFT, colours::BLUE_MASK)));
+        point_finders.push(Box::new(LineFinder::new(ObstacleType::RIGHT, colours::YELLOW_MASK)));
+        point_finders.push(Box::new(ObstacleFinder::new(ObstacleType::BOX, colours::PURPLE_MASK)));
+        point_finders.push(Box::new(ArrowFinder::new()));
+
         return Vision {
-            left_finder: LineFinder::new(LineType::LEFT),
-            right_finder: LineFinder::new(LineType::RIGHT),
+            point_finders: point_finders,
         };
     }
 
-    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, point_map: &mut impl PointMap) -> () {
-        let _ = self.left_finder.get_points_for_line(image);
-        let _ = self.right_finder.get_points_for_line(image);
-        // get blue and yellow masks
-        // sample points from contours
+    pub fn update_points_from_image(&mut self, image: &opencv::core::Mat, point_map: &mut impl PointMap) -> () {
+        // Find all points in image space
+        for mut finder in self.point_finders {
+            let mut points = finder.get_points(image).unwrap_or(vec![]);
+            point_map.add_points(&mut points);
+        }
+
         // perspective correct points
 
         // get purple mask and do bottom edge filter

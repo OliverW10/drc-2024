@@ -29,10 +29,7 @@ use std::cmp::{Ord, Reverse};
 use std::rc::Rc;
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use crate::{
-    messages::path::SimpleDrive,
-    points::{Point, PointMap, Pos},
-};
+use crate::points::{Point, PointMap, Pos};
 
 #[derive(Copy, Clone, PartialEq, Default)]
 pub struct DriveState {
@@ -101,7 +98,7 @@ mod distance_calculators {
 
     pub fn calculate_curvature_weight(state: DriveState) -> f64 {
         // add weighting to enourage taking smoother lines
-        state.curvature.powf(1.5) * 0.1
+        state.curvature.abs().powf(2.0) * 0.1
     }
 }
 
@@ -203,7 +200,6 @@ impl Planner {
             let current_rc = Rc::new(&current);
 
             if current.steps > PLAN_STEPS {
-                // plan must be 3 seconds
                 return reconstruct_path(current);
             }
 
@@ -240,44 +236,4 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
     }
     path.reverse();
     Path { points: path }
-}
-
-const LOOKAHEAD_DIST: f64 = 0.2;
-
-impl Planner {
-    pub fn command_from_path(path: Path) -> SimpleDrive {
-        // pure prusuit
-        let result = SimpleDrive {
-            curvature: 0.0,
-            speed: 0.0,
-        };
-        result
-    }
-}
-
-fn get_target_on_path(path: Path) -> Option<Pos> {
-    if path.points.len() <= 2 {
-        return None;
-    }
-
-    let mut dist = 0.0;
-    // if none of the points are far enough to be past the lookahead dist, use the last and second last points
-    let mut target_idx = path.points.len() - 2;
-    // TODO: can do like zip(path, path[1:])?
-    // loop but to second last point
-    for point_idx in 0..(path.points.len() - 1) {
-        let prev = path.points[point_idx];
-        let next = path.points[point_idx + 1];
-        let cur_dist = prev.dist(next);
-        if dist + cur_dist > LOOKAHEAD_DIST {
-            target_idx = point_idx;
-            break;
-        }
-        dist += cur_dist;
-    }
-    let before = path.points[target_idx];
-    let after = path.points[target_idx + 1];
-    let needed_dist = LOOKAHEAD_DIST - dist;
-    let target = before.dist_along(after, needed_dist);
-    Some(target)
 }

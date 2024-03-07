@@ -42,3 +42,6 @@ vision: perspective corrected point cloud
 plan path: a* in phase space
 path follower: pure pursit
 drive controller: pid's and tire slip lookup
+
+https://www.altronics.com.au/p/z6473-raspberry-pi-5mp-fisheye-camera-module/ - seems that the raspberry pi zero has a different camera connector to what the normal raspberry pi has, this camer ahas the smalller one that the raspberry pi zero uses
+https://core-electronics.com.au/raspberry-pi-wide-angle-camera-module-seeed-studio.html - if using with the pi zero may have to get a cable adapter, otherwise can just use a pi 3
