@@ -1,11 +1,11 @@
+mod arrow;
+mod config;
 mod driver;
+mod follower;
+mod obstacle;
 mod planner;
 mod points;
 mod vision;
-mod follower;
-mod arrow;
-mod obstacle;
-mod config;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -16,13 +16,12 @@ use driver::{IDriver, SerialDriver};
 use follower::Follower;
 use opencv::{highgui, prelude::*, videoio, Result};
 use planner::{DriveState, Planner};
-use points::SimplePointMap;
+use points::{PointMap, SimplePointMap};
 use vision::Vision;
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
 fn main() -> Result<()> {
-    // highgui::named_window("window", highgui::WINDOW_AUTOSIZE)?;
     let mut camera = videoio::VideoCapture::new(0, videoio::CAP_ANY)?;
 
     let opened = videoio::VideoCapture::is_opened(&camera)?;
@@ -31,13 +30,13 @@ fn main() -> Result<()> {
     }
     let mut frame = Mat::default();
 
-	let mut point_map = SimplePointMap::new();
-	let mut vision = Vision::new();
-	let planner = Planner::new();
+    let mut point_map = SimplePointMap::new();
+    let mut vision = Vision::new();
+    let planner = Planner::new();
     let follower = Follower::new();
     let driver = SerialDriver::new();
 
-	let current_state = DriveState::default();
+    let current_state = DriveState::default();
 
     loop {
         camera.read(&mut frame)?;
@@ -45,9 +44,10 @@ fn main() -> Result<()> {
             highgui::imshow("window", &frame)?;
         }
 
-		vision.update_points_from_image(&frame, &mut point_map);
-		let path = planner.find_path(current_state, &point_map);
-        let command = follower.command_from_path(path);
+        let mut new_points = vision.get_points_from_image(&frame);
+        point_map.add_points(&mut new_points);
+        let path = planner.find_path(current_state, &point_map);
+        let command = follower.command_to_follow_path(path);
         driver.drive(command);
 
         if SHOULD_DISPLAY_VIDEO {

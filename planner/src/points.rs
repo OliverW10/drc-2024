@@ -1,4 +1,7 @@
-use std::{collections::HashMap, fmt::{self, Display}};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
 #[derive(Copy, Clone, PartialEq, Default)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
 pub struct Pos {

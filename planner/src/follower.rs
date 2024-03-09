@@ -1,6 +1,5 @@
 use crate::{messages::path::SimpleDrive, planner::Path, points::Pos};
 
-
 fn get_target_on_path(path: Path) -> Option<Pos> {
     if path.points.len() <= 2 {
         return None;
@@ -37,8 +36,8 @@ impl Follower {
         Follower {}
     }
 
-    pub fn command_from_path(&self, path: Path) -> SimpleDrive {
-        // pure prusuit
+    pub fn command_to_follow_path(&self, path: Path) -> SimpleDrive {
+        // command_to_follow_path
         let result = SimpleDrive {
             curvature: 0.0,
             speed: 0.0,
