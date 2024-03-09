@@ -10,8 +10,8 @@ pub mod colours {
     const fn r(l: VecN<u8, 3>, h: VecN<u8, 3>) -> ColourRange {
         ColourRange { low: l, high: h }
     }
-    pub const YELLOW_MASK: ColourRange = r(c(16, 15, 90), c(45, 255, 255));
-    pub const BLUE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    pub const YELLOW_MASK: ColourRange = r(c(20, 20, 120), c(45, 255, 255));
+    pub const BLUE_MASK: ColourRange = r(c(110, 90, 120), c(120, 255, 255));
     pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));

@@ -2,8 +2,7 @@ use opencv::{
     core::{in_range, BorderTypes, Mat, Size, VecN},
     highgui,
     imgproc::{
-        cvt_color, find_contours, gaussian_blur, ColorConversionCodes, ContourApproximationModes,
-        RetrievalModes,
+        circle, cvt_color, find_contours, gaussian_blur, ColorConversionCodes, ContourApproximationModes, RetrievalModes
     },
     types::VectorOfVectorOfPoint,
 };
@@ -44,7 +43,7 @@ impl LineFinder {
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
-        true
+        border_points.len() > 100
     }
 
     fn points_from_contours(&self) -> Vec<opencv::core::Point> {
@@ -63,14 +62,14 @@ impl LineFinder {
     }
 }
 
-const SAMPLE_EVERY: usize = 10;
+const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
     fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> {
         gaussian_blur(
             image,
             &mut self.blurred,
-            Size::new(5, 5),
+            Size::new(7, 7),
             0.0,
             0.0,
             BorderTypes::BORDER_CONSTANT.into(),
@@ -81,7 +80,6 @@ impl ObjectFinder for LineFinder {
             &self.colour.high,
             &mut self.mask,
         )?;
-        highgui::imshow(&self.line_type.to_string(), &self.mask)?;
 
         find_contours(
             &self.mask,
@@ -91,9 +89,12 @@ impl ObjectFinder for LineFinder {
             opencv::core::Point { x: 0, y: 0 },
         )?;
 
-        let points = perspective_correct(self.points_from_contours())?;
+        let image_points = self.points_from_contours();
+        draw_points_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
+        let points = perspective_correct(&image_points)?;
 
-        let time = 0.0;
+        let time = 0.0; // TODO: get time
+
         Ok(points
             .iter()
             .map(|p| Point {
@@ -108,9 +109,19 @@ impl ObjectFinder for LineFinder {
     }
 }
 
+fn draw_points_debug(wnd_name: &str, mask: &Mat, points: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
+    let mut display = Mat::default();
+    cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
+    // for pnt in points {
+    //     circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+    // }
+    highgui::imshow(wnd_name, &display)?;
+    Ok(())
+}
+
 // use opencv vector or Vec?
 fn perspective_correct(
-    cv_points: Vec<opencv::core::Point>,
+    cv_points: &Vec<opencv::core::Point>,
 ) -> Result<Vec<opencv::core::Point>, opencv::Error> {
     // should be few enough points that the allocations are not too big
     let result = opencv::core::Vector::<opencv::core::Point>::new();
