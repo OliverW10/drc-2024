@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::{self, Display}};
 
 #[derive(Copy, Clone, PartialEq, Default)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
 pub struct Pos {
@@ -26,12 +26,22 @@ impl Pos {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum PointType {
     LeftLine,
     RightLine,
     Obstacle,
     ArrowLeft,
     ArrowRight,
+}
+
+// https://stackoverflow.com/a/32712140
+impl Display for PointType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
 }
 
 pub struct Point {

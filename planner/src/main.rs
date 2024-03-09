@@ -3,6 +3,9 @@ mod planner;
 mod points;
 mod vision;
 mod follower;
+mod arrow;
+mod obstacle;
+mod config;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
