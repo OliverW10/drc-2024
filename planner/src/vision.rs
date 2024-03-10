@@ -43,7 +43,7 @@ impl LineFinder {
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
-        border_points.len() > 100
+        border_points.len() > 150
     }
 
     fn points_from_contours(&self) -> Vec<opencv::core::Point> {
@@ -66,21 +66,13 @@ const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
     fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> {
-        gaussian_blur(
-            image,
-            &mut self.blurred,
-            Size::new(7, 7),
-            0.0,
-            0.0,
-            BorderTypes::BORDER_CONSTANT.into(),
-        )?;
         in_range(
-            &self.blurred,
+            // &self.blurred,
+            image,
             &self.colour.low,
             &self.colour.high,
             &mut self.mask,
         )?;
-
         find_contours(
             &self.mask,
             &mut self.contours,
@@ -112,9 +104,9 @@ impl ObjectFinder for LineFinder {
 fn draw_points_debug(wnd_name: &str, mask: &Mat, points: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
     let mut display = Mat::default();
     cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
-    // for pnt in points {
-    //     circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
-    // }
+    for pnt in points {
+        circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+    }
     highgui::imshow(wnd_name, &display)?;
     Ok(())
 }
@@ -134,6 +126,7 @@ fn perspective_correct(
 pub struct Vision {
     point_finders: Vec<Box<dyn ObjectFinder>>,
     hsv: Mat,
+    blurred: Mat,
 }
 
 impl Vision {
@@ -154,19 +147,29 @@ impl Vision {
         return Vision {
             point_finders: point_finders,
             hsv: Mat::default(),
+            blurred: Mat::default(),
         };
     }
 
+    #[logging_timer::time]
     pub fn get_points_from_image(&mut self, image: &opencv::core::Mat) -> Vec<Point> {
-        // am expect'ing because don't want opencv errors to leak outside of vision
+        // am .expect'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway
-        cvt_color(
+        gaussian_blur(
             image,
+            &mut self.blurred,
+            Size::new(3, 3),
+            0.0,
+            0.0,
+            BorderTypes::BORDER_CONSTANT.into(),
+        ).expect("");
+
+        cvt_color(
+            &self.blurred,
             &mut self.hsv,
             ColorConversionCodes::COLOR_BGR2HSV.into(),
             0,
-        )
-        .expect("");
+        ).expect("");
 
         self.point_finders
             .iter_mut()

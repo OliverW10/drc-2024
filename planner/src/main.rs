@@ -18,16 +18,23 @@ use opencv::{highgui, prelude::*, videoio, Result};
 use planner::{DriveState, Planner};
 use points::{PointMap, SimplePointMap};
 use vision::Vision;
+use chrono::{DateTime, Utc};
+use env_logger::Builder;
+use std::io::Write;
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
 fn main() -> Result<()> {
-    let mut camera = videoio::VideoCapture::new(0, videoio::CAP_ANY)?;
-
-    let opened = videoio::VideoCapture::is_opened(&camera)?;
+    configure_logging();
+    let mut cap = videoio::VideoCapture::new(0, videoio::CAP_V4L2)?;
+    // cap.set(videoio::CAP_PROP_BUFFERSIZE, 1.0);
+    
+    let opened = videoio::VideoCapture::is_opened(&cap)?;
     if !opened {
         panic!("Unable to open default camera!");
     }
+    cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0)?;
+    cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0)?;
     let mut frame = Mat::default();
 
     let mut point_map = SimplePointMap::new();
@@ -39,7 +46,7 @@ fn main() -> Result<()> {
     let current_state = DriveState::default();
 
     loop {
-        camera.read(&mut frame)?;
+        cap.read(&mut frame)?;
         if frame.size()?.width > 0 && SHOULD_DISPLAY_VIDEO {
             highgui::imshow("window", &frame)?;
         }
@@ -58,4 +65,34 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+// https://github.com/PhilipDaniels/logging_timer/blob/master/examples/logging_demo.rs
+// TODO: move out of main.rs
+// Just configures logging in such a way that we can see everything.
+fn configure_logging() {
+    let mut builder = Builder::from_default_env();
+    builder.format(|buf, record| {
+        let utc: DateTime<Utc> = Utc::now();
+
+        write!(
+            buf,
+            "{:?} {} [{}] ",
+            //utc.format("%Y-%m-%dT%H:%M:%S.%fZ"),
+            utc, // same, probably faster?
+            record.level(),
+            record.target()
+        )?;
+
+        match (record.file(), record.line()) {
+            (Some(file), Some(line)) => write!(buf, "[{}/{}] ", file, line),
+            (Some(file), None) => write!(buf, "[{}] ", file),
+            (None, Some(_line)) => write!(buf, " "),
+            (None, None) => write!(buf, " "),
+        }?;
+
+        writeln!(buf, "{}", record.args())
+    });
+
+    builder.init();
 }

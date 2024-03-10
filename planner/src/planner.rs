@@ -187,6 +187,7 @@ impl Planner {
         Planner {}
     }
 
+    #[logging_timer::time]
     pub fn find_path(&self, start_state: DriveState, points: &impl PointMap) -> Path {
         // https://doc.rust-lang.org/std/collections/binary_heap/index.html
         let mut open_set = BinaryHeap::new();
