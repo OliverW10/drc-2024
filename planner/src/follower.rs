@@ -37,6 +37,8 @@ impl Follower {
     }
 
     pub fn command_to_follow_path(&self, path: Path) -> SimpleDrive {
+        puffin::profile_function!();
+
         // command_to_follow_path
         let result = SimpleDrive {
             curvature: 0.0,

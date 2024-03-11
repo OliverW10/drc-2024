@@ -187,8 +187,9 @@ impl Planner {
         Planner {}
     }
 
-    #[logging_timer::time]
     pub fn find_path(&self, start_state: DriveState, points: &impl PointMap) -> Path {
+        puffin::profile_function!();
+
         // https://doc.rust-lang.org/std/collections/binary_heap/index.html
         let mut open_set = BinaryHeap::new();
         open_set.push(PathNodeData {
@@ -223,6 +224,8 @@ impl Planner {
 }
 
 fn reconstruct_path(final_node: PathNodeData) -> Path {
+    puffin::profile_function!();
+
     let mut path = Vec::new();
     path.push(final_node.state.pos);
     let mut current = final_node.prev;

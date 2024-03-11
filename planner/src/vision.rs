@@ -1,8 +1,8 @@
 use opencv::{
-    core::{in_range, BorderTypes, Mat, Size, VecN},
+    core::{in_range, perspective_transform, BorderTypes, Mat, MatTraitConst, Point2f, Rect, Size, VecN, DECOMP_LU},
     highgui,
     imgproc::{
-        circle, cvt_color, find_contours, gaussian_blur, ColorConversionCodes, ContourApproximationModes, RetrievalModes
+        circle, cvt_color, find_contours, gaussian_blur, get_perspective_transform, ColorConversionCodes, ContourApproximationModes, RetrievalModes
     },
     types::VectorOfVectorOfPoint,
 };
@@ -47,6 +47,8 @@ impl LineFinder {
     }
 
     fn points_from_contours(&self) -> Vec<opencv::core::Point> {
+        puffin::profile_function!();
+
         self.contours
             .iter()
             .flat_map(|contour| {
@@ -66,20 +68,28 @@ const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
     fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error> {
-        in_range(
-            // &self.blurred,
-            image,
-            &self.colour.low,
-            &self.colour.high,
-            &mut self.mask,
-        )?;
-        find_contours(
-            &self.mask,
-            &mut self.contours,
-            RetrievalModes::RETR_EXTERNAL.into(),
-            ContourApproximationModes::CHAIN_APPROX_NONE.into(),
-            opencv::core::Point { x: 0, y: 0 },
-        )?;
+        puffin::profile_function!();
+
+        {
+            puffin::profile_scope!("thresholding");
+            in_range(
+                // &self.blurred,
+                image,
+                &self.colour.low,
+                &self.colour.high,
+                &mut self.mask,
+            )?;
+        }
+        {
+            puffin::profile_scope!("contours");
+            find_contours(
+                &self.mask,
+                &mut self.contours,
+                RetrievalModes::RETR_EXTERNAL.into(),
+                ContourApproximationModes::CHAIN_APPROX_NONE.into(),
+                opencv::core::Point { x: 0, y: 0 },
+            )?;
+        }
 
         let image_points = self.points_from_contours();
         draw_points_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
@@ -102,6 +112,8 @@ impl ObjectFinder for LineFinder {
 }
 
 fn draw_points_debug(wnd_name: &str, mask: &Mat, points: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
+    puffin::profile_function!();
+
     let mut display = Mat::default();
     cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
     for pnt in points {
@@ -111,20 +123,38 @@ fn draw_points_debug(wnd_name: &str, mask: &Mat, points: &Vec<opencv::core::Poin
     Ok(())
 }
 
-// use opencv vector or Vec?
+fn get_perspective_matrix() -> Mat{
+    puffin::profile_function!();
+
+    let perspective_points_image = opencv::core::Vector::<Point2f>::from_iter(vec![
+        Point2f {x: -100.0, y: 480.0},
+        Point2f {x: 100.0, y: 0.0},
+        Point2f {x: 540.0, y: 0.0},
+        Point2f {x: 740.0, y: 480.0}
+    ]);
+    let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
+        Point2f {x: 0.0, y: 100.0},
+        Point2f {x: 0.0, y: 0.0},
+        Point2f {x: 100.0, y: 0.0},
+        Point2f {x: 100.0, y: 100.0}
+    ]);
+    get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
+}
+
 fn perspective_correct(
     cv_points: &Vec<opencv::core::Point>,
 ) -> Result<Vec<opencv::core::Point>, opencv::Error> {
-    // should be few enough points that the allocations are not too big
-    let result = opencv::core::Vector::<opencv::core::Point>::new();
-    // opencv::calib3d::fisheye_undistort_points_def(cv_points, &mut result, k, d);
-    // opencv::core::perspective_transform()
-    // result.to_vec()
-    Ok(vec![])
+    puffin::profile_function!();
+
+    let input = opencv::core::Vector::<opencv::core::Point>::from_slice(cv_points);
+    let mut result = opencv::core::Vector::<opencv::core::Point>::new();
+    perspective_transform(&input, &mut result, &get_perspective_matrix())?;
+    Ok(result.into())
 }
 
 pub struct Vision {
     point_finders: Vec<Box<dyn ObjectFinder>>,
+    cropped: Mat,
     hsv: Mat,
     blurred: Mat,
 }
@@ -146,30 +176,44 @@ impl Vision {
 
         return Vision {
             point_finders: point_finders,
+            cropped: Mat::default(),
             hsv: Mat::default(),
             blurred: Mat::default(),
         };
     }
 
-    #[logging_timer::time]
     pub fn get_points_from_image(&mut self, image: &opencv::core::Mat) -> Vec<Point> {
-        // am .expect'ing because don't want opencv errors to leak outside of vision
+        puffin::profile_function!();
+        {
+            puffin::profile_scope!("crop");
+            let top_crop = 100;
+            let size = image.size().unwrap();
+            let roi = Rect {x: 0, y: top_crop, width: size.width, height: size.height - top_crop};
+            self.cropped = image.apply_1(roi).unwrap();
+        }
+        // am .unwrap'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway
-        gaussian_blur(
-            image,
-            &mut self.blurred,
-            Size::new(3, 3),
-            0.0,
-            0.0,
-            BorderTypes::BORDER_CONSTANT.into(),
-        ).expect("");
+        {
+            puffin::profile_scope!("blur");
+            gaussian_blur(
+                &self.cropped,
+                &mut self.blurred,
+                Size::new(3, 3),
+                0.0,
+                0.0,
+                BorderTypes::BORDER_CONSTANT.into(),
+            ).unwrap();
+        }
 
-        cvt_color(
-            &self.blurred,
-            &mut self.hsv,
-            ColorConversionCodes::COLOR_BGR2HSV.into(),
-            0,
-        ).expect("");
+        {
+            puffin::profile_scope!("hsv");
+            cvt_color(
+                &self.blurred,
+                &mut self.hsv,
+                ColorConversionCodes::COLOR_BGR2HSV.into(),
+                0,
+            ).unwrap();
+        }
 
         self.point_finders
             .iter_mut()
