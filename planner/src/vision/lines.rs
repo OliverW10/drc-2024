@@ -76,8 +76,8 @@ impl ObjectFinder for LineFinder {
         }
 
         let image_points = self.points_from_contours();
-        draw_points_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
-        let points = perspective_correct(&image_points)?;
+        let points = perspective_correct(&image_points);
+        draw_points_debug(&self.line_type.to_string(), &self.mask, &image_points, &points)?;
 
         let time = 0.0; // TODO: get time
 
@@ -95,13 +95,16 @@ impl ObjectFinder for LineFinder {
     }
 }
 
-fn draw_points_debug(wnd_name: &str, mask: &Mat, points: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
+fn draw_points_debug(wnd_name: &str, mask: &Mat, points_before: &Vec<opencv::core::Point>, points_after: &Vec<Pos>) -> Result<(), opencv::Error>{
     puffin::profile_function!();
 
     let mut display = Mat::default();
     cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
-    for pnt in points {
+    for pnt in points_before {
         circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+    }
+    for pnt in points_after {
+        circle(&mut display, opencv::core::Point2i {x: pnt.x as i32, y: pnt.y as i32}, 3, VecN::<f64, 4> {0: [0., 255., 0., 0.]}, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
     }
     highgui::imshow(wnd_name, &display)?;
     Ok(())

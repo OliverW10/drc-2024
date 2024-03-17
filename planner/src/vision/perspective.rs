@@ -19,7 +19,7 @@ fn get_perspective_matrix() -> Mat{
         Point2f {x: 100.0, y: 0.0},
         Point2f {x: 100.0, y: 100.0}
     ]);
-    get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
+    get_perspective_transform(&perspective_points_ground, &perspective_points_image, DECOMP_LU).unwrap()
 }
 
 pub fn perspective_correct(
@@ -27,18 +27,12 @@ pub fn perspective_correct(
 ) -> Vec<Pos> {
     puffin::profile_function!();
 
-    // perspective_transform needs a mat with dimentions [number of points, 1, 2] (which isn't documented anywhere and gives bad error messages)
-    // and it can't convert noncontinous representations, like vector of vectors, of that into a mat (also give bad error messages)
     let mut x = Vec::<opencv::core::Point2f>::new();
     for point in points_ints_in_vec {
         x.push(opencv::core::Point2f{ x: point.x as f32, y: point.y as f32 });
     }
-    // let points = Mat::new_rows_cols_with_default(5, 2, Vec1f::opencv_type(), Scalar::all(1.23)).unwrap();
     let points = Mat::from_slice(&x).unwrap();
     
-    // let result_vec = Vec::<[opencv::core::Point2f; 1]>::with_capacity(x.len());
-    // TODO: can probrobly just create the result map straight up
-    // let mut result_mat = opencv::core::Mat::from_slice_2d(&result_vec).unwrap();
     let mut result_mat = opencv::core::Mat::zeros(x.len() as i32, 2, CV_32FC2).unwrap().to_mat().unwrap();
     // TODO: don't regenerate every frame
     let transform = get_perspective_matrix();
