@@ -1,10 +1,7 @@
 use opencv::{
-    core::{in_range, perspective_transform, BorderTypes, Mat, MatTraitConst, Point2f, Rect, Size, VecN, DECOMP_LU},
-    highgui,
-    imgproc::{
+    core::{in_range, perspective_transform, BorderTypes, Mat, MatExprTraitConst, MatTraitConst, Point2f, Rect, Size, ToInputArray, VecN, _InputArrayTraitConst, DECOMP_LU}, highgui, imgproc::{
         circle, cvt_color, find_contours, gaussian_blur, get_perspective_transform, ColorConversionCodes, ContourApproximationModes, RetrievalModes
-    },
-    types::VectorOfVectorOfPoint,
+    }, prelude, types::VectorOfVectorOfPoint
 };
 use rand::Rng;
 
@@ -142,14 +139,27 @@ fn get_perspective_matrix() -> Mat{
 }
 
 fn perspective_correct(
-    cv_points: &Vec<opencv::core::Point>,
-) -> Result<Vec<opencv::core::Point>, opencv::Error> {
+    points_ints_in_vec: &Vec<opencv::core::Point2i>,
+) -> Result<Vec<Pos>, opencv::Error> {
     puffin::profile_function!();
+    // if points_ints_in_vec.len() == 0{
+    //     return Ok(vec![]);
+    // }
+    // TODO: is this double copying all the points?
+    let mut x = Vec::<[opencv::core::Point2f; 1]>::new();
+    // let mut points = opencv::types::VectorOfVec2f::new();
+    for (idx, point) in points_ints_in_vec.iter().enumerate() {
+        x.push([opencv::core::Point2f { x: point.x as f32, y: point.y as f32 }]);
+    }
+    let points = opencv::core::Mat::from_slice_2d(&x)?;
+    
+    let mut result = opencv::core::Vector::<opencv::core::Point2f>::new();
+    // TODO: don't regenerate every frame
+    let transform = get_perspective_matrix();
+    perspective_transform(&points, &mut result, &transform)?;
 
-    let input = opencv::core::Vector::<opencv::core::Point>::from_slice(cv_points);
-    let mut result = opencv::core::Vector::<opencv::core::Point>::new();
-    perspective_transform(&input, &mut result, &get_perspective_matrix())?;
-    Ok(result.into())
+    // TODO: unchecked?
+    Ok(result.iter().map(|v| Pos {x: v.x as f64, y: v.y as f64}).collect())
 }
 
 pub struct Vision {
@@ -184,9 +194,10 @@ impl Vision {
 
     pub fn get_points_from_image(&mut self, image: &opencv::core::Mat) -> Vec<Point> {
         puffin::profile_function!();
+
         {
             puffin::profile_scope!("crop");
-            let top_crop = 100;
+            let top_crop = 150;
             let size = image.size().unwrap();
             let roi = Rect {x: 0, y: top_crop, width: size.width, height: size.height - top_crop};
             self.cropped = image.apply_1(roi).unwrap();
@@ -215,6 +226,7 @@ impl Vision {
             ).unwrap();
         }
 
+        // TODO: thread::spawn for each point finder
         self.point_finders
             .iter_mut()
             .flat_map(|finder| finder.get_points(&self.hsv).expect(""))
