@@ -1,3 +1,5 @@
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
+
 use opencv::{core::{in_range, Mat, VecN}, highgui, imgproc::{circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes}, types::VectorOfVectorOfPoint};
 use rand::Rng;
 
@@ -77,9 +79,10 @@ impl ObjectFinder for LineFinder {
 
         let image_points = self.points_from_contours();
         let points = perspective_correct(&image_points);
-        draw_points_debug(&self.line_type.to_string(), &self.mask, &image_points, &points)?;
+        draw_mask_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
 
-        let time = 0.0; // TODO: get time
+        // TODO: is monotonic?
+        let time_now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
         Ok(points
             .iter()
@@ -88,23 +91,20 @@ impl ObjectFinder for LineFinder {
                     x: p.x as f64,
                     y: p.y as f64,
                 },
-                confidence: time,
+                confidence: time_now.as_secs_f64(),
                 point_type: self.line_type,
             })
             .collect())
     }
 }
 
-fn draw_points_debug(wnd_name: &str, mask: &Mat, points_before: &Vec<opencv::core::Point>, points_after: &Vec<Pos>) -> Result<(), opencv::Error>{
+fn draw_mask_debug(wnd_name: &str, mask: &Mat, points_before: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
     puffin::profile_function!();
 
     let mut display = Mat::default();
     cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
     for pnt in points_before {
         circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
-    }
-    for pnt in points_after {
-        circle(&mut display, opencv::core::Point2i {x: pnt.x as i32, y: pnt.y as i32}, 3, VecN::<f64, 4> {0: [0., 255., 0., 0.]}, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
     }
     highgui::imshow(wnd_name, &display)?;
     Ok(())

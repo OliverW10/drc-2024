@@ -58,6 +58,8 @@ pub trait PointMap {
     fn get_points_below_confidence(&self, cutoff: f64) -> Vec<&Point>;
     fn get_points_lowest_confidence(&self, number: f64) -> Vec<&Point>;
     fn add_points(&mut self, points: &mut Vec<Point>);
+    // TODO: make PointMap impl iterator?
+    fn filter(&mut self, predicate: fn(&Point) -> bool);
 }
 
 pub struct SimplePointMap {
@@ -90,6 +92,11 @@ impl PointMap for SimplePointMap {
 
     fn get_points_lowest_confidence(&self, number: f64) -> Vec<&Point> {
         vec![]
+    }
+
+    fn filter(&mut self, predicate: fn(&Point) -> bool){
+        // &&Point was auto suggested, not sure why it is double refrence, but if works so idk
+        self.all_points = self.all_points.drain(..).filter(predicate).collect();
     }
 }
 

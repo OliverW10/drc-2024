@@ -4,6 +4,7 @@ mod follower;
 mod planner;
 mod points;
 mod vision;
+mod pruner;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -23,7 +24,7 @@ fn main() -> Result<()> {
     // https://github.com/EmbarkStudios/puffin/tree/main/puffin
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
-    println!("Run this to view profiling data:  puffin_viewer {server_addr}");
+    println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
     puffin::set_scopes_on(true);
 
     let mut cap = videoio::VideoCapture::new(0, videoio::CAP_V4L2)?;
@@ -54,6 +55,7 @@ fn main() -> Result<()> {
 
         let mut new_points = vision.get_points_from_image(&frame);
         point_map.add_points(&mut new_points);
+        point_map.filter(|p| pruner::judge_point_on_age(p));
         let path = planner.find_path(current_state, &point_map);
         let command = follower.command_to_follow_path(path);
         driver.drive(command);

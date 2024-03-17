@@ -14,12 +14,12 @@ fn get_perspective_matrix() -> Mat{
         Point2f {x: 740.0, y: 480.0}
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f {x: 0.0, y: 100.0},
+        Point2f {x: 0.0, y: 0.2},
         Point2f {x: 0.0, y: 0.0},
-        Point2f {x: 100.0, y: 0.0},
-        Point2f {x: 100.0, y: 100.0}
+        Point2f {x: 0.2, y: 0.0},
+        Point2f {x: 0.2, y: 0.2}
     ]);
-    get_perspective_transform(&perspective_points_ground, &perspective_points_image, DECOMP_LU).unwrap()
+    get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
 }
 
 pub fn perspective_correct(
