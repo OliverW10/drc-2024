@@ -1,7 +1,11 @@
 pub mod colours {
     use opencv::core::VecN;
 
-    use crate::vision::ColourRange;
+
+    pub struct ColourRange {
+        pub low: VecN<u8, 3>,
+        pub high: VecN<u8, 3>,
+    }
 
     // TODO: use config file
     const fn c<T>(a: T, b: T, c: T) -> VecN<T, 3> {

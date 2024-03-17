@@ -1,8 +1,6 @@
-mod arrow;
 mod config;
 mod driver;
 mod follower;
-mod obstacle;
 mod planner;
 mod points;
 mod vision;
