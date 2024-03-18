@@ -8,10 +8,10 @@ fn get_perspective_matrix() -> Mat{
     puffin::profile_function!();
 
     let perspective_points_image = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f {x: -100.0, y: 480.0},
-        Point2f {x: 100.0, y: 0.0},
-        Point2f {x: 540.0, y: 0.0},
-        Point2f {x: 740.0, y: 480.0}
+        Point2f {x: -140.0, y: 400.0},
+        Point2f {x: 140.0, y: 50.0},
+        Point2f {x: 500.0, y: 50.0},
+        Point2f {x: 780.0, y: 400.0}
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
         Point2f {x: 0.0, y: 0.2},

@@ -3,7 +3,7 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use opencv::{core::{in_range, Mat, VecN}, highgui, imgproc::{circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes}, types::VectorOfVectorOfPoint};
 use rand::Rng;
 
-use crate::{config::colours::ColourRange, points::{Point, PointType, Pos}, vision::perspective::perspective_correct};
+use crate::{config::colours::ColourRange, points::{Point, PointType, Pos}, pruner::get_line_exiry, vision::perspective::perspective_correct};
 
 use super::ObjectFinder;
 
@@ -81,9 +81,7 @@ impl ObjectFinder for LineFinder {
         let points = perspective_correct(&image_points);
         draw_mask_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
 
-        // TODO: is monotonic?
-        let time_now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-
+        let confidence = get_line_exiry();
         Ok(points
             .iter()
             .map(|p| Point {
@@ -91,7 +89,7 @@ impl ObjectFinder for LineFinder {
                     x: p.x as f64,
                     y: p.y as f64,
                 },
-                confidence: time_now.as_secs_f64(),
+                expire_at: confidence,
                 point_type: self.line_type,
             })
             .collect())

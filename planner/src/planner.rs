@@ -29,14 +29,18 @@ use std::cmp::{Ord, Reverse};
 use std::rc::Rc;
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use crate::points::{Point, PointMap, Pos};
+use opencv::core::{Mat, MatExprTraitConst, VecN, CV_8UC3};
+use opencv::highgui;
+use opencv::imgproc::circle;
+
+use crate::points::{Point, PointMap, PointType, Pos};
 
 #[derive(Copy, Clone, PartialEq, Default)]
 pub struct DriveState {
-    pos: Pos,
-    angle: f64,     // angle of the car
-    curvature: f64, // turn angle
-    speed: f64,
+    pub pos: Pos,
+    pub angle: f64,     // angle of the car
+    pub curvature: f64, // turn angle
+    pub speed: f64,
 }
 
 impl DriveState {
@@ -199,27 +203,30 @@ impl Planner {
             steps: 0,
         });
         while let Some(current) = open_set.pop() {
-            let current_rc = Rc::new(&current);
+            let current_rc = Rc::new(PathNode::Node(current.clone()));
 
             if current.steps > PLAN_STEPS {
-                return reconstruct_path(current);
+                let final_path = reconstruct_path(current);
+                draw_map_debug(&points.get_points_in_area(Pos{x:0., y:0.}, 999.0), &final_path).unwrap();
+                return final_path;
             }
 
             let next_drive_states = get_possible_next_states(current.state).into_iter();
             let relevant_points = points.get_points_in_area(current.state.pos, 0.5); // TODO: magic number
-            let get_node_from_state_fn = |state| {
+            let get_node_from_state = |state| {
                 PathNodeData {
                     state: state,
-                    distance: current_rc.distance + distance(state, &relevant_points),
-                    prev: Rc::new(PathNode::End), //Rc::clone(&current_rc),
+                    distance: current.distance + distance(state, &relevant_points),
+                    prev: current_rc.clone(),
                     steps: current.steps + 1,
                 }
             };
-            let next_nodes = next_drive_states.map(get_node_from_state_fn);
+            let next_nodes = next_drive_states.map(get_node_from_state);
             open_set.extend(next_nodes);
         }
-        let path = Path { points: Vec::new() };
-        path
+        let no_path = Path { points: Vec::new() };
+        draw_map_debug(&points.get_points_in_area(Pos{x:0., y:0.}, 999.0), &no_path).unwrap();
+        no_path
     }
 }
 
@@ -234,10 +241,46 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
             PathNode::End => break,
             PathNode::Node(node_data) => {
                 path.push(node_data.state.pos);
+                println!("{:?}", node_data.state.pos);
                 current = node_data.prev.clone();
             }
         }
     }
+    println!("{}", path.len());
     path.reverse();
     Path { points: path }
+}
+
+
+pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) -> Result<(), opencv::Error>{
+    puffin::profile_function!();
+    
+    fn map_to_img(pos: &Pos) -> opencv::core::Point {
+        let center_x = 300.;
+        let center_y = 300.;
+        let scale = 800.; // pixels per meter
+        let x = center_x + scale * pos.x;
+        let y = center_y + scale * pos.y;
+        opencv::core::Point {x: x as i32, y: y as i32}
+    }
+
+    let mut display = Mat::zeros(600, 600, CV_8UC3)?.to_mat()?;
+    for pnt in point_map {
+        let col = match pnt.point_type {
+            PointType::LeftLine => VecN::<f64, 4> { 0: [255.0, 0.0, 0.0 ,0.0] },
+            PointType::RightLine => VecN::<f64, 4> { 0: [0.0, 255.0, 255.0, 0.0] },
+            PointType::Obstacle => VecN::<f64, 4> { 0: [255.0, 0.0, 255.0, 0.0] },
+            PointType::ArrowLeft => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 0.0] },
+            PointType::ArrowRight => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 100.0] },
+        };
+        circle(&mut display, map_to_img(&pnt.pos), 3, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+    }
+
+    let last_pnt = path.points[0];
+    let white = VecN::<f64, 4> { 0: [255., 255., 255., 0.]};
+    for path_pnt in path.points[1..].iter() {
+        opencv::imgproc::line(&mut display, map_to_img(&last_pnt), map_to_img(path_pnt), white, 1, opencv::imgproc::LineTypes::LINE_8.into(), 0)?;
+    }
+    highgui::imshow("map", &display)?;
+    Ok(())
 }

@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Display},
 };
 
-#[derive(Copy, Clone, PartialEq, Default)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
+#[derive(Copy, Clone, PartialEq, Default, Debug)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
 pub struct Pos {
     pub x: f64,
     pub y: f64,
@@ -49,14 +49,12 @@ impl Display for PointType {
 
 pub struct Point {
     pub pos: Pos,
-    pub confidence: f64,
+    pub expire_at: f64,
     pub point_type: PointType,
 }
 
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
-    fn get_points_below_confidence(&self, cutoff: f64) -> Vec<&Point>;
-    fn get_points_lowest_confidence(&self, number: f64) -> Vec<&Point>;
     fn add_points(&mut self, points: &mut Vec<Point>);
     // TODO: make PointMap impl iterator?
     fn filter(&mut self, predicate: fn(&Point) -> bool);
@@ -76,26 +74,21 @@ impl SimplePointMap {
 
 impl PointMap for SimplePointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point> {
-        self.all_points
+        let ret: Vec<&Point> = self.all_points
             .iter()
-            .filter(|point| point.pos.dist(around) < max_dist)
-            .collect()
+            .filter(|point| {
+                let result = point.pos.dist(around) < max_dist;
+                result
+            })
+            .collect();
+        ret
     }
 
     fn add_points(&mut self, points: &mut Vec<Point>) {
         self.all_points.append(points);
     }
 
-    fn get_points_below_confidence(&self, cutoff: f64) -> Vec<&Point> {
-        vec![]
-    }
-
-    fn get_points_lowest_confidence(&self, number: f64) -> Vec<&Point> {
-        vec![]
-    }
-
     fn filter(&mut self, predicate: fn(&Point) -> bool){
-        // &&Point was auto suggested, not sure why it is double refrence, but if works so idk
         self.all_points = self.all_points.drain(..).filter(predicate).collect();
     }
 }

@@ -44,7 +44,8 @@ fn main() -> Result<()> {
     let follower = Follower::new();
     let driver = SerialDriver::new();
 
-    let current_state = DriveState::default();
+    let mut current_state = DriveState::default();
+    current_state.angle = -3.141;
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
@@ -55,7 +56,7 @@ fn main() -> Result<()> {
 
         let mut new_points = vision.get_points_from_image(&frame);
         point_map.add_points(&mut new_points);
-        point_map.filter(|p| pruner::judge_point_on_age(p));
+        point_map.filter(|p| pruner::should_keep_point(p));
         let path = planner.find_path(current_state, &point_map);
         let command = follower.command_to_follow_path(path);
         driver.drive(command);

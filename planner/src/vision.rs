@@ -4,8 +4,8 @@ mod perspective;
 mod lines;
 
 use opencv::{
-    core::{BorderTypes, Mat, MatExprTraitConst, MatTraitConst, Rect, Size, VecN, CV_8UC3}, highgui, imgproc::{
-        circle, cvt_color, gaussian_blur, ColorConversionCodes
+    core::{BorderTypes, Mat, MatTraitConst, Rect, Size}, imgproc::{
+        cvt_color, gaussian_blur, ColorConversionCodes
     }
 };
 
@@ -82,35 +82,10 @@ impl Vision {
         }
 
         // TODO: thread::spawn for each point finder
-        let points = self.point_finders
+        let points: Vec<Point> = self.point_finders
             .iter_mut()
-            .flat_map(|finder| finder.get_points(&self.hsv).expect(""))
+            .flat_map(|finder| finder.get_points(&self.hsv).unwrap())
             .collect();
-        draw_map_debug(&points);
         points
     }
-}
-
-
-pub fn draw_map_debug(points: &Vec<Point>) -> Result<(), opencv::Error>{
-    puffin::profile_function!();
-
-    let mut display = Mat::zeros(600, 600, CV_8UC3)?.to_mat()?;
-    let center_x = 300.;
-    let center_y = 300.;
-    let scale = 800.; // pixels per meter
-    for pnt in points {
-        let x = center_x + scale * pnt.pos.x;
-        let y = center_y + scale * pnt.pos.y;
-        let col = match pnt.point_type {
-            PointType::LeftLine => VecN::<f64, 4> { 0: [255.0, 0.0, 0.0 ,0.0] },
-            PointType::RightLine => VecN::<f64, 4> { 0: [0.0, 255.0, 255.0, 0.0] },
-            PointType::Obstacle => VecN::<f64, 4> { 0: [255.0, 0.0, 255.0, 0.0] },
-            PointType::ArrowLeft => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 0.0] },
-            PointType::ArrowRight => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 100.0] },
-        };
-        circle(&mut display, opencv::core::Point {x: x as i32, y: y as i32}, 3, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
-    }
-    highgui::imshow("map", &display)?;
-    Ok(())
 }
