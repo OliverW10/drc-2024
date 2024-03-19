@@ -1,3 +1,6 @@
+This was the plan when I was going to reuse an old prebuild car, the primary reason for having the microcontroller as seperate was so that it could read the analog pot on the servo in the car I had, since the new car will likely have a normal servo(s) and motoro controllers I think it is probrobly easiest to just use a single raspberry pi, and send the pwm signals from that.
+Still undecided on whether or not a imu is required, will have to see through testing.
+
 need a pico (or other microcontroller) to use an adc to measure battery voltage
 need a full pi for csi camera port
 

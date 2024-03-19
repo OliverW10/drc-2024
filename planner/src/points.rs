@@ -23,6 +23,15 @@ impl Pos {
         }
     }
 
+    pub fn rotate(&self, angle: f64) -> Pos {
+        let c = angle.cos();
+        let s = angle.sin();
+        Pos {
+            x: self.x * c + self.y * s,
+            y: self.x * s + self.y * c
+        }
+    }
+
     pub fn dist_along(&self, other: Pos, dist: f64) -> Pos {
         let t = dist / self.dist(other);
         self.lerp(other, t)
@@ -57,7 +66,7 @@ pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
     fn add_points(&mut self, points: &mut Vec<Point>);
     // TODO: make PointMap impl iterator?
-    fn filter(&mut self, predicate: fn(&Point) -> bool);
+    fn filter(&mut self, predicate: impl Fn(&Point) -> bool);
 }
 
 pub struct SimplePointMap {
@@ -85,10 +94,14 @@ impl PointMap for SimplePointMap {
     }
 
     fn add_points(&mut self, points: &mut Vec<Point>) {
+        puffin::profile_function!();
+
         self.all_points.append(points);
     }
 
-    fn filter(&mut self, predicate: fn(&Point) -> bool){
+    fn filter(&mut self, predicate: impl Fn(&Point) -> bool){
+        puffin::profile_function!();
+
         self.all_points = self.all_points.drain(..).filter(predicate).collect();
     }
 }

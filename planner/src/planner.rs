@@ -45,23 +45,8 @@ pub struct DriveState {
 
 impl DriveState {
     fn step_distance(&self, dist: f64) -> DriveState {
-        if self.curvature.abs() < 1e-3 {
-            return DriveState {
-                pos: Pos {
-                    x: self.pos.x + dist * self.angle.cos(), // TODO: make who method single case
-                    y: self.pos.y + dist * self.angle.sin(),
-                },
-                angle: self.angle,
-                curvature: self.curvature,
-                speed: self.speed,
-            };
-        }
-        let radius = 1.0 / self.curvature;
         return DriveState {
-            pos: Pos {
-                x: 1.0,
-                y: dist.sin() * radius,
-            },
+            pos: get_along_arc(dist, self.curvature).rotate(self.angle),
             angle: self.angle + self.curvature * dist,
             curvature: self.curvature,
             speed: self.speed,
@@ -71,6 +56,22 @@ impl DriveState {
     fn step(&self, time: f64) -> DriveState {
         let dist = time * self.speed;
         return self.step_distance(dist);
+    }
+}
+
+fn get_along_arc(dist: f64, curvature: f64) -> Pos {
+    if curvature < 1e-3 {
+        Pos {
+            x: dist,
+            y: 0.
+        }
+    } else {
+        let r = 1. / curvature;
+        let angle_around = dist / r.abs();
+        Pos {
+            x: angle_around.sin() * r,
+            y: (1. - angle_around.cos()) * r,
+        }
     }
 }
 
@@ -109,12 +110,21 @@ mod distance_calculators {
 // calculates the distance/traversability map used for pathfinding
 fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
     let mut total_weight = -0.1;
-    for point in nearby_points {
-        total_weight += distance_calculators::calculate_avoid_edge_weight_for_point(state, point);
-        total_weight +=
-            distance_calculators::calculate_travel_direction_weight_for_point(state, point);
-    }
+
+    total_weight += nearby_points
+        .iter()
+        .map(|p| distance_calculators::calculate_avoid_edge_weight_for_point(state, p))
+        .reduce(f64::max)
+        .unwrap_or(0.);
+
+    total_weight += nearby_points
+        .iter()
+        .map(|p| distance_calculators::calculate_travel_direction_weight_for_point(state, p))
+        .reduce(f64::max)
+        .unwrap_or(0.);
+
     total_weight += distance_calculators::calculate_curvature_weight(state);
+
     total_weight
 }
 
@@ -129,7 +139,7 @@ fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
             curvature: new_curvature,
             ..state
         };
-        output.push(new_drive_state.step(0.1));
+        output.push(new_drive_state.step_distance(0.1));
     }
     output
 }
@@ -183,7 +193,7 @@ pub struct Planner {
 }
 
 const PLAN_STEP_SIZE_SECONDS: f64 = 0.1;
-const PLAN_LENGTH_SECONDS: f64 = 3.0;
+const PLAN_LENGTH_SECONDS: f64 = 2.0;
 const PLAN_STEPS: u32 = (PLAN_LENGTH_SECONDS / PLAN_STEP_SIZE_SECONDS) as u32;
 
 impl Planner {
@@ -241,12 +251,10 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
             PathNode::End => break,
             PathNode::Node(node_data) => {
                 path.push(node_data.state.pos);
-                println!("{:?}", node_data.state.pos);
                 current = node_data.prev.clone();
             }
         }
     }
-    println!("{}", path.len());
     path.reverse();
     Path { points: path }
 }
@@ -273,13 +281,14 @@ pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) -> Result<(), opencv
             PointType::ArrowLeft => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 0.0] },
             PointType::ArrowRight => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 100.0] },
         };
-        circle(&mut display, map_to_img(&pnt.pos), 3, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+        circle(&mut display, map_to_img(&pnt.pos), 1, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
     }
 
-    let last_pnt = path.points[0];
+    let mut last_pnt = path.points[0];
     let white = VecN::<f64, 4> { 0: [255., 255., 255., 0.]};
     for path_pnt in path.points[1..].iter() {
         opencv::imgproc::line(&mut display, map_to_img(&last_pnt), map_to_img(path_pnt), white, 1, opencv::imgproc::LineTypes::LINE_8.into(), 0)?;
+        last_pnt = path_pnt.clone();
     }
     highgui::imshow("map", &display)?;
     Ok(())
