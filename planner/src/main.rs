@@ -1,10 +1,12 @@
 mod config;
+mod display;
 mod driver;
 mod follower;
 mod planner;
 mod points;
-mod vision;
 mod pruner;
+mod state;
+mod vision;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -14,9 +16,11 @@ mod messages {
 use driver::{IDriver, SerialDriver};
 use follower::Follower;
 use opencv::{highgui, prelude::*, videoio, Result};
-use planner::{DriveState, Planner};
+use planner::Planner;
 use points::{PointMap, SimplePointMap};
 use vision::Vision;
+
+use crate::state::DriveState;
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 

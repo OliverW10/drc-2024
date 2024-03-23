@@ -1,46 +1,66 @@
-use opencv::{core::{perspective_transform, DataType, Mat, MatExprTraitConst, MatTraitConstManual, Point2f, Scalar, Vec2f, CV_32FC1, CV_32FC2, DECOMP_LU}, imgproc::get_perspective_transform, prelude};
+use opencv::{
+    core::{
+        perspective_transform, DataType, Mat, MatExprTraitConst, MatTraitConstManual, Point2f,
+        Scalar, Vec2f, CV_32FC1, CV_32FC2, DECOMP_LU,
+    },
+    imgproc::get_perspective_transform,
+    prelude,
+};
 
 use crate::points::Pos;
 
-
-
-fn get_perspective_matrix() -> Mat{
+fn get_perspective_matrix() -> Mat {
     puffin::profile_function!();
 
     let perspective_points_image = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f {x: -140.0, y: 400.0},
-        Point2f {x: 140.0, y: 50.0},
-        Point2f {x: 500.0, y: 50.0},
-        Point2f {x: 780.0, y: 400.0}
+        Point2f {
+            x: -140.0,
+            y: 400.0,
+        },
+        Point2f { x: 140.0, y: 50.0 },
+        Point2f { x: 500.0, y: 50.0 },
+        Point2f { x: 780.0, y: 400.0 },
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f {x: 0.0, y: 0.2},
-        Point2f {x: 0.0, y: 0.0},
-        Point2f {x: 0.2, y: 0.0},
-        Point2f {x: 0.2, y: 0.2}
+        Point2f { x: 0.0, y: 0.2 },
+        Point2f { x: 0.0, y: 0.0 },
+        Point2f { x: 0.2, y: 0.0 },
+        Point2f { x: 0.2, y: 0.2 },
     ]);
-    get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
+    get_perspective_transform(
+        &perspective_points_image,
+        &perspective_points_ground,
+        DECOMP_LU,
+    )
+    .unwrap()
 }
 
-pub fn perspective_correct(
-    points_ints_in_vec: &Vec<opencv::core::Point2i>,
-) -> Vec<Pos> {
+pub fn perspective_correct(points_ints_in_vec: &Vec<opencv::core::Point2i>) -> Vec<Pos> {
     puffin::profile_function!();
 
     let mut x = Vec::<opencv::core::Point2f>::new();
     for point in points_ints_in_vec {
-        x.push(opencv::core::Point2f{ x: point.x as f32, y: point.y as f32 });
+        x.push(opencv::core::Point2f {
+            x: point.x as f32,
+            y: point.y as f32,
+        });
     }
     let points = Mat::from_slice(&x).unwrap();
-    
-    let mut result_mat = opencv::core::Mat::zeros(x.len() as i32, 2, CV_32FC2).unwrap().to_mat().unwrap();
+
+    let mut result_mat = opencv::core::Mat::zeros(x.len() as i32, 2, CV_32FC2)
+        .unwrap()
+        .to_mat()
+        .unwrap();
     // TODO: don't regenerate every frame
     let transform = get_perspective_matrix();
     perspective_transform(&points, &mut result_mat, &transform).unwrap();
 
     let mut result_final = vec![];
     for p in result_mat.iter::<Point2f>().unwrap() {
-        result_final.push(Pos { x: p.1.x as f64, y: p.1.y as f64 });
+        result_final.push(Pos {
+            x: p.1.x as f64,
+            y: p.1.y as f64,
+        });
     }
     result_final
 }

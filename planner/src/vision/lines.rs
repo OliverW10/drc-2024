@@ -1,12 +1,24 @@
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use opencv::{core::{in_range, Mat, VecN}, highgui, imgproc::{circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes}, types::VectorOfVectorOfPoint};
+use opencv::{
+    core::{in_range, Mat, VecN},
+    highgui,
+    imgproc::{
+        circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes,
+        RetrievalModes,
+    },
+    types::VectorOfVectorOfPoint,
+};
 use rand::Rng;
 
-use crate::{config::colours::ColourRange, points::{Point, PointType, Pos}, pruner::get_line_exiry, vision::perspective::perspective_correct};
+use crate::{
+    config::colours::ColourRange,
+    points::{Point, PointType, Pos},
+    pruner::get_line_exiry,
+    vision::perspective::perspective_correct,
+};
 
 use super::ObjectFinder;
-
 
 // Finds points along the edges of something
 pub struct LineFinder {
@@ -96,13 +108,32 @@ impl ObjectFinder for LineFinder {
     }
 }
 
-fn draw_mask_debug(wnd_name: &str, mask: &Mat, points_before: &Vec<opencv::core::Point>) -> Result<(), opencv::Error>{
+fn draw_mask_debug(
+    wnd_name: &str,
+    mask: &Mat,
+    points_before: &Vec<opencv::core::Point>,
+) -> Result<(), opencv::Error> {
     puffin::profile_function!();
 
     let mut display = Mat::default();
-    cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
+    cvt_color(
+        mask,
+        &mut display,
+        ColorConversionCodes::COLOR_GRAY2BGR.into(),
+        0,
+    )?;
     for pnt in points_before {
-        circle(&mut display, *pnt, 3, VecN::<f64, 4> { 0: [0.0, 0.0, 255.0, 0.0] }, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
+        circle(
+            &mut display,
+            *pnt,
+            3,
+            VecN::<f64, 4> {
+                0: [0.0, 0.0, 255.0, 0.0],
+            },
+            -1,
+            opencv::imgproc::LineTypes::FILLED.into(),
+            0,
+        )?;
     }
     highgui::imshow(wnd_name, &display)?;
     Ok(())

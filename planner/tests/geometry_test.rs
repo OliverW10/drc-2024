@@ -1,6 +1,4 @@
 // use points;
 
 #[test]
-fn test_step_dist() {
-    
-}
+fn test_step_dist() {}

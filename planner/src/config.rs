@@ -1,7 +1,6 @@
 pub mod colours {
     use opencv::core::VecN;
 
-
     pub struct ColourRange {
         pub low: VecN<u8, 3>,
         pub high: VecN<u8, 3>,
@@ -19,4 +18,10 @@ pub mod colours {
     pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+}
+
+pub mod plan {
+    pub const PLAN_STEP_SIZE_METERS: f64 = 0.5;
+    pub const PLAN_LENGTH_METERS: f64 = 2.0;
+    pub const PLAN_STEPS: u32 = (PLAN_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
 }

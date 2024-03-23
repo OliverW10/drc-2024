@@ -1,15 +1,17 @@
 mod arrow;
+mod lines;
 mod obstacle;
 mod perspective;
-mod lines;
 
 use opencv::{
-    core::{BorderTypes, Mat, MatTraitConst, Rect, Size}, imgproc::{
-        cvt_color, gaussian_blur, ColorConversionCodes
-    }
+    core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
+    imgproc::{cvt_color, gaussian_blur, ColorConversionCodes},
 };
 
-use crate::{config::colours::{self, ColourRange}, points::{Point, PointType}};
+use crate::{
+    config::colours::{self, ColourRange},
+    points::{Point, PointType},
+};
 
 use self::lines::LineFinder;
 
@@ -54,7 +56,12 @@ impl Vision {
             puffin::profile_scope!("crop");
             let top_crop = 150;
             let size = image.size().unwrap();
-            let roi = Rect {x: 0, y: top_crop, width: size.width, height: size.height - top_crop};
+            let roi = Rect {
+                x: 0,
+                y: top_crop,
+                width: size.width,
+                height: size.height - top_crop,
+            };
             self.cropped = image.apply_1(roi).unwrap();
         }
         // am .unwrap'ing because don't want opencv errors to leak outside of vision
@@ -68,7 +75,8 @@ impl Vision {
                 0.0,
                 0.0,
                 BorderTypes::BORDER_CONSTANT.into(),
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         {
@@ -78,11 +86,13 @@ impl Vision {
                 &mut self.hsv,
                 ColorConversionCodes::COLOR_BGR2HSV.into(),
                 0,
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         // TODO: thread::spawn for each point finder
-        let points: Vec<Point> = self.point_finders
+        let points: Vec<Point> = self
+            .point_finders
             .iter_mut()
             .flat_map(|finder| finder.get_points(&self.hsv).unwrap())
             .collect();

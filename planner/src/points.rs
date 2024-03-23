@@ -1,12 +1,23 @@
 use std::{
     collections::HashMap,
     fmt::{self, Display},
+    ops,
 };
 
 #[derive(Copy, Clone, PartialEq, Default, Debug)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
 pub struct Pos {
     pub x: f64,
     pub y: f64,
+}
+
+impl ops::Add for Pos {
+    type Output = Pos;
+    fn add(self, rhs: Pos) -> Pos {
+        Pos {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
 }
 
 impl Pos {
@@ -28,7 +39,7 @@ impl Pos {
         let s = angle.sin();
         Pos {
             x: self.x * c + self.y * s,
-            y: self.x * s + self.y * c
+            y: self.x * s + self.y * c,
         }
     }
 
@@ -83,7 +94,8 @@ impl SimplePointMap {
 
 impl PointMap for SimplePointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point> {
-        let ret: Vec<&Point> = self.all_points
+        let ret: Vec<&Point> = self
+            .all_points
             .iter()
             .filter(|point| {
                 let result = point.pos.dist(around) < max_dist;
@@ -99,7 +111,7 @@ impl PointMap for SimplePointMap {
         self.all_points.append(points);
     }
 
-    fn filter(&mut self, predicate: impl Fn(&Point) -> bool){
+    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) {
         puffin::profile_function!();
 
         self.all_points = self.all_points.drain(..).filter(predicate).collect();

@@ -29,51 +29,10 @@ use std::cmp::{Ord, Reverse};
 use std::rc::Rc;
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use opencv::core::{Mat, MatExprTraitConst, VecN, CV_8UC3};
-use opencv::highgui;
-use opencv::imgproc::circle;
-
-use crate::points::{Point, PointMap, PointType, Pos};
-
-#[derive(Copy, Clone, PartialEq, Default)]
-pub struct DriveState {
-    pub pos: Pos,
-    pub angle: f64,     // angle of the car
-    pub curvature: f64, // turn angle
-    pub speed: f64,
-}
-
-impl DriveState {
-    fn step_distance(&self, dist: f64) -> DriveState {
-        return DriveState {
-            pos: get_along_arc(dist, self.curvature).rotate(self.angle),
-            angle: self.angle + self.curvature * dist,
-            curvature: self.curvature,
-            speed: self.speed,
-        };
-    }
-
-    fn step(&self, time: f64) -> DriveState {
-        let dist = time * self.speed;
-        return self.step_distance(dist);
-    }
-}
-
-fn get_along_arc(dist: f64, curvature: f64) -> Pos {
-    if curvature < 1e-3 {
-        Pos {
-            x: dist,
-            y: 0.
-        }
-    } else {
-        let r = 1. / curvature;
-        let angle_around = dist / r.abs();
-        Pos {
-            x: angle_around.sin() * r,
-            y: (1. - angle_around.cos()) * r,
-        }
-    }
-}
+use crate::config::plan::{PLAN_STEPS, PLAN_STEP_SIZE_METERS};
+use crate::display::draw_map_debug;
+use crate::points::{Point, PointMap, Pos};
+use crate::state::DriveState;
 
 mod distance_calculators {
     use crate::points::Point;
@@ -128,9 +87,10 @@ fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
     total_weight
 }
 
-const MAX_CURVATURE: f64 = 1.0 / 0.3;
+const MAX_CURVATURE: f64 = 1.;
+// const MAX_CURVATURE: f64 = 1.0 / 0.3;
 
-fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
+pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
     let mut output = Vec::new();
     let turn_options = 3; // per side
     for new_turn_index in -turn_options..turn_options + 1 {
@@ -139,7 +99,7 @@ fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
             curvature: new_curvature,
             ..state
         };
-        output.push(new_drive_state.step_distance(0.1));
+        output.push(new_drive_state.step_distance(PLAN_STEP_SIZE_METERS));
     }
     output
 }
@@ -192,10 +152,6 @@ pub struct Planner {
     // any internal state
 }
 
-const PLAN_STEP_SIZE_SECONDS: f64 = 0.1;
-const PLAN_LENGTH_SECONDS: f64 = 2.0;
-const PLAN_STEPS: u32 = (PLAN_LENGTH_SECONDS / PLAN_STEP_SIZE_SECONDS) as u32;
-
 impl Planner {
     pub fn new() -> Planner {
         Planner {}
@@ -217,25 +173,31 @@ impl Planner {
 
             if current.steps > PLAN_STEPS {
                 let final_path = reconstruct_path(current);
-                draw_map_debug(&points.get_points_in_area(Pos{x:0., y:0.}, 999.0), &final_path).unwrap();
+                draw_map_debug(
+                    &points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0),
+                    &final_path,
+                )
+                .unwrap();
                 return final_path;
             }
 
             let next_drive_states = get_possible_next_states(current.state).into_iter();
             let relevant_points = points.get_points_in_area(current.state.pos, 0.5); // TODO: magic number
-            let get_node_from_state = |state| {
-                PathNodeData {
-                    state: state,
-                    distance: current.distance + distance(state, &relevant_points),
-                    prev: current_rc.clone(),
-                    steps: current.steps + 1,
-                }
+            let get_node_from_state = |state| PathNodeData {
+                state: state,
+                distance: current.distance + distance(state, &relevant_points),
+                prev: current_rc.clone(),
+                steps: current.steps + 1,
             };
             let next_nodes = next_drive_states.map(get_node_from_state);
             open_set.extend(next_nodes);
         }
         let no_path = Path { points: Vec::new() };
-        draw_map_debug(&points.get_points_in_area(Pos{x:0., y:0.}, 999.0), &no_path).unwrap();
+        draw_map_debug(
+            &points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0),
+            &no_path,
+        )
+        .unwrap();
         no_path
     }
 }
@@ -257,39 +219,4 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
     }
     path.reverse();
     Path { points: path }
-}
-
-
-pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) -> Result<(), opencv::Error>{
-    puffin::profile_function!();
-    
-    fn map_to_img(pos: &Pos) -> opencv::core::Point {
-        let center_x = 300.;
-        let center_y = 300.;
-        let scale = 800.; // pixels per meter
-        let x = center_x + scale * pos.x;
-        let y = center_y + scale * pos.y;
-        opencv::core::Point {x: x as i32, y: y as i32}
-    }
-
-    let mut display = Mat::zeros(600, 600, CV_8UC3)?.to_mat()?;
-    for pnt in point_map {
-        let col = match pnt.point_type {
-            PointType::LeftLine => VecN::<f64, 4> { 0: [255.0, 0.0, 0.0 ,0.0] },
-            PointType::RightLine => VecN::<f64, 4> { 0: [0.0, 255.0, 255.0, 0.0] },
-            PointType::Obstacle => VecN::<f64, 4> { 0: [255.0, 0.0, 255.0, 0.0] },
-            PointType::ArrowLeft => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 0.0] },
-            PointType::ArrowRight => VecN::<f64, 4> { 0: [100.0, 100.0, 100.0, 100.0] },
-        };
-        circle(&mut display, map_to_img(&pnt.pos), 1, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0)?;
-    }
-
-    let mut last_pnt = path.points[0];
-    let white = VecN::<f64, 4> { 0: [255., 255., 255., 0.]};
-    for path_pnt in path.points[1..].iter() {
-        opencv::imgproc::line(&mut display, map_to_img(&last_pnt), map_to_img(path_pnt), white, 1, opencv::imgproc::LineTypes::LINE_8.into(), 0)?;
-        last_pnt = path_pnt.clone();
-    }
-    highgui::imshow("map", &display)?;
-    Ok(())
 }
