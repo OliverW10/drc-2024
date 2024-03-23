@@ -3,7 +3,7 @@ use crate::points::Pos;
 #[derive(Copy, Clone, PartialEq, Default)]
 pub struct DriveState {
     pub pos: Pos,
-    pub angle: f64,     // angle of the car
+    pub angle: f64,     // heading of the car
     pub curvature: f64, // turn angle
     pub speed: f64,
 }
@@ -20,7 +20,7 @@ impl DriveState {
 }
 
 fn get_along_arc(dist: f64, curvature: f64) -> Pos {
-    if curvature < 1e-3 {
+    if curvature.abs() < 1e-3 {
         Pos { x: dist, y: 0. }
     } else {
         let r = 1. / curvature;

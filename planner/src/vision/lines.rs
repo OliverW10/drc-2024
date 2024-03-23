@@ -108,6 +108,8 @@ impl ObjectFinder for LineFinder {
     }
 }
 
+const DRAW_MASK: bool = false;
+
 fn draw_mask_debug(
     wnd_name: &str,
     mask: &Mat,
@@ -115,6 +117,9 @@ fn draw_mask_debug(
 ) -> Result<(), opencv::Error> {
     puffin::profile_function!();
 
+    if !DRAW_MASK {
+        return Ok(());
+    }
     let mut display = Mat::default();
     cvt_color(
         mask,

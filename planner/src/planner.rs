@@ -29,7 +29,7 @@ use std::cmp::{Ord, Reverse};
 use std::rc::Rc;
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use crate::config::plan::{PLAN_STEPS, PLAN_STEP_SIZE_METERS};
+use crate::config::plan::{MAX_CURVATURE, PLAN_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
 use crate::points::{Point, PointMap, Pos};
 use crate::state::DriveState;
@@ -62,13 +62,13 @@ mod distance_calculators {
 
     pub fn calculate_curvature_weight(state: DriveState) -> f64 {
         // add weighting to enourage taking smoother lines
-        state.curvature.abs().powf(2.0) * 0.1
+        state.curvature.abs().powf(2.0) * 0.2
     }
 }
 
 // calculates the distance/traversability map used for pathfinding
 fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
-    let mut total_weight = -0.1;
+    let mut total_weight = -PLAN_STEP_SIZE_METERS;
 
     total_weight += nearby_points
         .iter()
@@ -87,9 +87,6 @@ fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
     total_weight
 }
 
-const MAX_CURVATURE: f64 = 1.;
-// const MAX_CURVATURE: f64 = 1.0 / 0.3;
-
 pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
     let mut output = Vec::new();
     let turn_options = 3; // per side
@@ -99,7 +96,7 @@ pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
             curvature: new_curvature,
             ..state
         };
-        output.push(new_drive_state.step_distance(PLAN_STEP_SIZE_METERS));
+        output.push(new_drive_state);
     }
     output
 }
@@ -125,26 +122,26 @@ impl PartialEq for PathNodeData {
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
     }
-}
-impl Eq for PathNodeData {}
-impl PartialOrd for PathNodeData {
-    fn partial_cmp(&self, other: &PathNodeData) -> Option<Ordering> {
-        let regular_ordering = self
-            .distance
-            .partial_cmp(&other.distance)
-            .expect("should not have NaN distances");
-        // order is reversed so that std::BinaryHeap, which is usually a max heap, acts as a min heap
-        Some(Reverse(regular_ordering).0)
+
+    fn ne(&self, other: &Self) -> bool {
+        self.distance != other.distance
     }
 }
+
+impl Eq for PathNodeData {}
+
 impl Ord for PathNodeData {
     fn cmp(&self, other: &Self) -> Ordering {
-        // let ret = self.partial_cmp(other);
-        // match ret {
-        //     Some(i) => i,
-        //     None => Ordering::Equal
-        // }
-        self.partial_cmp(other).unwrap_or_else(|| Ordering::Equal)
+        other
+            .distance
+            .partial_cmp(&self.distance)
+            .unwrap_or(Ordering::Equal)
+    }
+}
+
+impl PartialOrd for PathNodeData {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -168,23 +165,25 @@ impl Planner {
             prev: Rc::new(PathNode::End),
             steps: 0,
         });
+        let mut total_paths = 0;
         while let Some(current) = open_set.pop() {
+            total_paths += 1;
             let current_rc = Rc::new(PathNode::Node(current.clone()));
 
             if current.steps > PLAN_STEPS {
+                // println!("final path cost: {}, evaluated {} paths", current.distance, total_paths);
                 let final_path = reconstruct_path(current);
                 draw_map_debug(
                     &points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0),
                     &final_path,
-                )
-                .unwrap();
+                );
                 return final_path;
             }
 
             let next_drive_states = get_possible_next_states(current.state).into_iter();
             let relevant_points = points.get_points_in_area(current.state.pos, 0.5); // TODO: magic number
-            let get_node_from_state = |state| PathNodeData {
-                state: state,
+            let get_node_from_state = |state: DriveState| PathNodeData {
+                state: state.step_distance(PLAN_STEP_SIZE_METERS),
                 distance: current.distance + distance(state, &relevant_points),
                 prev: current_rc.clone(),
                 steps: current.steps + 1,
@@ -192,12 +191,13 @@ impl Planner {
             let next_nodes = next_drive_states.map(get_node_from_state);
             open_set.extend(next_nodes);
         }
+
+        println!("Didn't find any paths, should be impossible");
         let no_path = Path { points: Vec::new() };
         draw_map_debug(
             &points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0),
             &no_path,
-        )
-        .unwrap();
+        );
         no_path
     }
 }

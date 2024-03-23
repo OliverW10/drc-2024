@@ -38,7 +38,7 @@ impl Pos {
         let c = angle.cos();
         let s = angle.sin();
         Pos {
-            x: self.x * c + self.y * s,
+            x: self.x * c - self.y * s,
             y: self.x * s + self.y * c,
         }
     }

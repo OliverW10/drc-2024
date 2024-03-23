@@ -13,7 +13,7 @@ use crate::{
     points::{Point, PointType},
 };
 
-use self::lines::LineFinder;
+use self::{arrow::ArrowFinder, lines::LineFinder};
 
 pub trait ObjectFinder {
     fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error>;
@@ -39,7 +39,7 @@ impl Vision {
         )));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_MASK)));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
-        // point_finders.push(Box::new(ArrowFinder::new()));
+        point_finders.push(Box::new(ArrowFinder::new()));
 
         return Vision {
             point_finders: point_finders,

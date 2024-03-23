@@ -20,7 +20,7 @@ use planner::Planner;
 use points::{PointMap, SimplePointMap};
 use vision::Vision;
 
-use crate::state::DriveState;
+use crate::{points::Pos, state::DriveState};
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
@@ -50,6 +50,7 @@ fn main() -> Result<()> {
 
     let mut current_state = DriveState::default();
     current_state.angle = -3.141 / 2.;
+    current_state.pos = Pos { x: 0., y: 0.3 };
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
