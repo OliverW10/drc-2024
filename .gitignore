@@ -2,7 +2,7 @@
 !shared/messages/
 **/.vscode/
 micro/build/
-planner/target/
+**/target/
 micro-py/.venv
 micro-py/wifi_creds.py
 **/node_modules

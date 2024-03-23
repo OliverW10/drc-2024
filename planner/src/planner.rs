@@ -68,6 +68,7 @@ mod distance_calculators {
 
 // calculates the distance/traversability map used for pathfinding
 fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
+    puffin::profile_function!();
     let mut total_weight = -PLAN_STEP_SIZE_METERS;
 
     total_weight += nearby_points
@@ -88,6 +89,8 @@ fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
 }
 
 pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
+    puffin::profile_function!();
+
     let mut output = Vec::new();
     let turn_options = 3; // per side
     for new_turn_index in -turn_options..turn_options + 1 {
@@ -171,10 +174,11 @@ impl Planner {
             let current_rc = Rc::new(PathNode::Node(current.clone()));
 
             if current.steps > PLAN_STEPS {
-                // println!("final path cost: {}, evaluated {} paths", current.distance, total_paths);
+                let all_points = points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0);
+                println!("{} points, final path cost: {}, evaluated {} paths", all_points.len(), current.distance, total_paths);
                 let final_path = reconstruct_path(current);
                 draw_map_debug(
-                    &points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0),
+                    &all_points,
                     &final_path,
                 );
                 return final_path;

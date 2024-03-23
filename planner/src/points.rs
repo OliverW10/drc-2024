@@ -94,6 +94,8 @@ impl SimplePointMap {
 
 impl PointMap for SimplePointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point> {
+        puffin::profile_function!();
+
         let ret: Vec<&Point> = self
             .all_points
             .iter()
