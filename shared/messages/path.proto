@@ -9,10 +9,28 @@ message SimpleDrive {
   float curvature = 2;
 }
 
-// message PathPoint {
+message PathPoint {
 
-// }
+}
 
-// message Path {
+message Path {
 
-// }
+}
+
+message Points {
+  repeated Points points = 1;
+}
+
+enum PointType {
+  LINE_LEFT = 0;
+  LINE_RIGHT = 1;
+  ARROW_LEFT = 2;
+  ARROW_RIGHT = 3;
+  OBSTACLE = 4;
+}
+
+message Point {
+  float x = 1;
+  float y = 2;
+  PointType point_type = 3;
+}

@@ -7,9 +7,17 @@ mod points;
 mod pruner;
 mod state;
 mod vision;
+mod comms;
+mod logging;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
+    }
+    pub mod diagnostic {
+        include!(concat!(env!("OUT_DIR"), "/messages.diagnostic.rs"));
+    }
+    pub mod command {
+        include!(concat!(env!("OUT_DIR"), "/messages.commands.rs"));
     }
 }
 

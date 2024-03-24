@@ -1,10 +1,9 @@
 use opencv::{
     core::{
-        perspective_transform, DataType, Mat, MatExprTraitConst, MatTraitConstManual, Point2f,
-        Scalar, Vec2f, CV_32FC1, CV_32FC2, DECOMP_LU,
+        perspective_transform, Mat, MatExprTraitConst, Point2f,
+        CV_32FC2, DECOMP_LU,
     },
-    imgproc::get_perspective_transform,
-    prelude,
+    imgproc::get_perspective_transform
 };
 
 use crate::points::Pos;
