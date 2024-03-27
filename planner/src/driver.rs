@@ -4,11 +4,11 @@ pub trait IDriver {
     fn drive(&self, command: SimpleDrive);
 }
 
-pub struct NetworkDriver {}
+pub struct PwmDriver {}
 
-impl NetworkDriver {}
+impl PwmDriver {}
 
-impl IDriver for NetworkDriver {
+impl IDriver for PwmDriver {
     fn drive(&self, command: SimpleDrive) {}
 }
 

@@ -3,14 +3,14 @@
 syntax = "proto3";
 package messages.commands;
 
-enum DriveState {
+enum CommandType {
   STATE_OFF = 0;
   STATE_AUTO = 1;
   STATE_MANUAL = 2;
 }
 
 message DriveCommand {
-  DriveState state = 1;
+  CommandType state = 1;
   float throttle = 2;
   float turn = 3;
 }

@@ -25,7 +25,7 @@
 
 // https://en.wikipedia.org/wiki/Motion_planning
 
-use std::cmp::{Ord, Reverse};
+use std::cmp::Ord;
 use std::rc::Rc;
 use std::{cmp::Ordering, collections::BinaryHeap};
 
@@ -104,8 +104,14 @@ pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
     output
 }
 
+pub struct PathPoint {
+    pub pos: Pos,
+    pub angle: f64,
+    pub curvature: f64,
+}
+
 pub struct Path {
-    pub points: Vec<Pos>,
+    pub points: Vec<PathPoint>,
 }
 
 #[derive(Clone)]
@@ -210,13 +216,13 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
     puffin::profile_function!();
 
     let mut path = Vec::new();
-    path.push(final_node.state.pos);
+    path.push(PathPoint { pos: final_node.state.pos, angle: final_node.state.angle, curvature: final_node.state.curvature });
     let mut current = final_node.prev;
     loop {
         match current.as_ref() {
             PathNode::End => break,
             PathNode::Node(node_data) => {
-                path.push(node_data.state.pos);
+                path.push(PathPoint { pos: node_data.state.pos, angle: node_data.state.angle, curvature: node_data.state.curvature });
                 current = node_data.prev.clone();
             }
         }

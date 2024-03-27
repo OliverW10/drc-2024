@@ -12,10 +12,20 @@ pub struct Pos {
 
 impl ops::Add for Pos {
     type Output = Pos;
-    fn add(self, rhs: Pos) -> Pos {
+    fn add(self, rhs: Pos) -> Self::Output {
         Pos {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
+        }
+    }
+}
+
+impl ops::Sub for Pos {
+    type Output = Pos;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Pos {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
         }
     }
 }
@@ -77,7 +87,8 @@ pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
     fn add_points(&mut self, points: &mut Vec<Point>);
     // TODO: make PointMap impl iterator?
-    fn filter(&mut self, predicate: impl Fn(&Point) -> bool);
+    // returns number removed
+    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) -> u32;
 }
 
 pub struct SimplePointMap {
@@ -113,10 +124,12 @@ impl PointMap for SimplePointMap {
         self.all_points.append(points);
     }
 
-    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) {
+    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) -> u32 {
         puffin::profile_function!();
 
+        let len_before = self.all_points.len();
         self.all_points = self.all_points.drain(..).filter(predicate).collect();
+        (len_before - self.all_points.len()) as u32
     }
 }
 

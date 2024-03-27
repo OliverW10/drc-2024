@@ -13,6 +13,7 @@ uom = "0.35.0"
 rand = "0.8.5"
 puffin = "0.19.0"
 puffin_http = "0.16.0"
+time = { version="0.3.34", features=["local-offset"]}
 
 [build-dependencies]
 prost-build = "0.12"

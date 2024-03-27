@@ -28,7 +28,7 @@ use planner::Planner;
 use points::{PointMap, SimplePointMap};
 use vision::Vision;
 
-use crate::{points::Pos, state::DriveState};
+use crate::{comms::NetworkComms, logging::{AggregateLogger, FileLogger, Logger}, messages::diagnostic::Diagnostic, points::Pos, state::DriveState};
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
@@ -55,10 +55,13 @@ fn main() -> Result<()> {
     let planner = Planner::new();
     let follower = Follower::new();
     let driver = SerialDriver::new();
+    let network_comms = NetworkComms::new();
+    let file_logger = FileLogger::new();
+    let mut logger = AggregateLogger::new(vec![Box::new(network_comms), Box::new(file_logger)]);
 
     let mut current_state = DriveState::default();
     current_state.angle = -3.141 / 2.;
-    current_state.pos = Pos { x: 0., y: 0.3 };
+    current_state.pos = Pos { x: 0.1, y: 0.3 };
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
@@ -69,10 +72,12 @@ fn main() -> Result<()> {
 
         let mut new_points = vision.get_points_from_image(&frame);
         point_map.add_points(&mut new_points);
-        point_map.filter(pruner::get_should_keep_point_predicate());
+        let filtered = point_map.filter(pruner::get_should_keep_point_predicate());
         let path = planner.find_path(current_state, &point_map);
-        let command = follower.command_to_follow_path(path);
+        let command = follower.command_to_follow_path(&path);
         driver.drive(command);
+
+        logger.send(&path, &new_points, filtered, &Diagnostic::default());
 
         if SHOULD_DISPLAY_VIDEO {
             let key = highgui::wait_key(10)?;

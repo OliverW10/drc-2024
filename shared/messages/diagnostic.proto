@@ -5,8 +5,8 @@ syntax = "proto3";
 package messages.diagnostic;
 
 message Diagnostic {
-  float actual_speed = 1; // to know if the encoder and drive motor is working
-  float actual_turn = 2; // to know if the servo is working
+  float actual_speed = 1;
+  float actual_turn = 2;
   float mcu_latency = 3; // to know if its connected
   float voltage = 4; // to know what the battery is at
 }

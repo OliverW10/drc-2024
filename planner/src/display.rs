@@ -1,7 +1,4 @@
-use std::{
-    f64::consts::PI,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use opencv::{
     core::{Mat, MatExprTraitConst, VecN, CV_8UC3},
@@ -28,7 +25,7 @@ fn map_to_img(pos: &Pos) -> opencv::core::Point {
     }
 }
 
-const DISPLAY_MAP: bool = false;
+const DISPLAY_MAP: bool = true;
 
 pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
     puffin::profile_function!();
@@ -59,7 +56,7 @@ pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
         dot(&mut display, &pnt.pos, col, 1);
     }
 
-    let mut last_pnt = path.points[0];
+    let mut last_pnt = path.points[0].pos;
     let white = VecN::<f64, 4> {
         0: [255., 255., 255., 0.],
     };
@@ -68,14 +65,14 @@ pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
         opencv::imgproc::line(
             &mut display,
             map_to_img(&last_pnt),
-            map_to_img(path_pnt),
+            map_to_img(&path_pnt.pos),
             white,
             1,
             opencv::imgproc::LineTypes::LINE_8.into(),
             0,
         )
         .unwrap();
-        last_pnt = path_pnt.clone();
+        last_pnt = path_pnt.pos.clone();
     }
 
     let time = 3.

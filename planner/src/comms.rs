@@ -1,9 +1,9 @@
-use std::net::TcpListener;
+use std::{io::Read, net::{TcpListener, TcpStream}, thread};
 
 use crate::{
     logging::Logger,
     messages::{
-        path::{Path, Points},
+        path::{Path, MapUpdate},
         diagnostic::Diagnostic
     }
 };
@@ -14,7 +14,7 @@ pub trait Commander {
     fn get_latest_message() -> Option<()>;
 }
 
-struct NetworkComms {
+pub struct NetworkComms {
     listener: TcpListener
 }
 
@@ -25,12 +25,29 @@ impl NetworkComms {
             listener: listener
         }
     }
+    
+    pub fn start_accept_loop(&self){
+        // thread::spawn(||{
+        //     loop {
+        //         let (stream, ipAddr) = self.listener.accept().unwrap();
+        //         self.start_recv_loop(stream);
+        //     }
+        // });
+    }
 
-    pub fn send() {}
+    pub fn start_recv_loop(&self, stream: TcpStream) {
+        // thread::spawn(|| {
+        //     let buf: [u8; 2048];
+        //     loop{
+        //         stream.read(&mut buf, );
+        //     }
+        // });
+    }
 }
 
 impl Logger for NetworkComms {
-    fn send(&self, path: &Path, new_points: &Points, diagnostic: &Diagnostic) {}
+    fn send_messages(&mut self, path: &Path, new_points: &MapUpdate, diagnostic: &Diagnostic) {
+    }
 }
 
 impl Commander for NetworkComms {

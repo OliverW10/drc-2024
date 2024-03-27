@@ -1,7 +1,6 @@
 // Messages sent fromm planner to controller
 
 syntax = "proto3";
-
 package messages.path;
 
 message SimpleDrive {
@@ -10,15 +9,20 @@ message SimpleDrive {
 }
 
 message PathPoint {
-
+  float x = 1;
+  float y = 2;
+  float angle = 3;
+  float curvature = 4;
 }
 
 message Path {
-
+  float point_interval = 1;
+  repeated PathPoint points = 2;
 }
 
-message Points {
-  repeated Points points = 1;
+message MapUpdate {
+  uint32 num_deleted = 1;
+  repeated MapPoint points_added = 2;
 }
 
 enum PointType {
@@ -29,7 +33,7 @@ enum PointType {
   OBSTACLE = 4;
 }
 
-message Point {
+message MapPoint {
   float x = 1;
   float y = 2;
   PointType point_type = 3;

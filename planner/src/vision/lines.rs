@@ -1,5 +1,3 @@
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
-
 use opencv::{
     core::{in_range, Mat, VecN},
     highgui,
@@ -108,7 +106,7 @@ impl ObjectFinder for LineFinder {
     }
 }
 
-const DRAW_MASK: bool = false;
+const DRAW_MASK: bool = true;
 
 fn draw_mask_debug(
     wnd_name: &str,
