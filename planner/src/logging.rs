@@ -1,17 +1,17 @@
 use std::{fs::File, io::Write};
 use prost::Message;
 use time::OffsetDateTime;
-use crate::{config::plan::PLAN_STEP_SIZE_METERS, messages::{self, diagnostic::Diagnostic}, planner, points, state};
+use crate::{config::plan::PLAN_STEP_SIZE_METERS, messages, planner, points};
 
 
 // Something to log structured diagnostic and debgging info such as sensor readings, and planned actions
 pub trait Logger {
-    fn send_messages(&mut self, path: &messages::path::Path, new_points: &messages::path::MapUpdate, diagnostic: &messages::diagnostic::Diagnostic);
+    fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic);
 
-    // Converts the internal types to the protobuf types which are actually sent with send_messages
+    // Converts the functional types to the protobuf types which are actually sent with send_messages
     fn send(&mut self, path: &planner::Path, new_points: &Vec<points::Point>, num_deleted: u32, diagnostic: &messages::diagnostic::Diagnostic){
 
-        let path_dto = messages::path::Path {
+        let path_dto = Some(messages::path::Path {
             point_interval: PLAN_STEP_SIZE_METERS as f32,
             points: path.points.iter().map(|p| messages::path::PathPoint {
                 x: p.pos.x as f32,
@@ -19,7 +19,7 @@ pub trait Logger {
                 angle: p.angle as f32,
                 curvature: p.curvature as f32,
             }).collect()
-        };
+        });
         
         let new_points_dtos = new_points.iter().map(|p| messages::path::MapPoint {
             x: p.pos.x as f32,
@@ -32,14 +32,14 @@ pub trait Logger {
                 points::PointType::Obstacle => messages::path::PointType::Obstacle,
             }.into()
         }).collect();
-        let map_update_dto = messages::path::MapUpdate {
+        let map_update_dto = Some(messages::path::MapUpdate {
             points_added: new_points_dtos,
             num_deleted: num_deleted,
-        };
+        });
 
-        let diagnostic_dto = diagnostic;
+        let diagnostic_dto = Some(diagnostic.clone());
 
-        self.send_messages(&path_dto, &map_update_dto, diagnostic_dto);
+        self.send_core(&messages::diagnostic::FullDiagnostic { path: path_dto, map_update: map_update_dto, diagnostic: diagnostic_dto });
     }
 }
 
@@ -61,14 +61,15 @@ pub fn get_new_log_file_name() -> String {
 }
 
 impl Logger for FileLogger {
-    fn send_messages(&mut self, path: &messages::path::Path, new_points: &messages::path::MapUpdate, diagnostic: &messages::diagnostic::Diagnostic) {
-        let buffer = path.encode_to_vec();
-        match self.file.write(&buffer) {
-            Err(e) => println!("error! {}", e),
-            Ok(n) => println!("write {} bytes", n),
+    fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
+        let message = message.encode_length_delimited_to_vec();
+        match self.file.write(&message) {
+            Err(e) => println!("error writing log file {}", e),
+            Ok(n) => println!("had {} bytes, wrote {} bytes", message.len(), n),
         };
     }
 }
+
 
 
 // Simple struct to multicast logging
@@ -83,9 +84,16 @@ impl AggregateLogger {
 }
 
 impl Logger for AggregateLogger {
-    fn send_messages(&mut self, path: &messages::path::Path, new_points: &messages::path::MapUpdate, diagnostic: &messages::diagnostic::Diagnostic) {
+    fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         for logger in self.loggers.iter_mut() {
-            logger.send_messages(path, new_points, diagnostic);
+            logger.send_core(message);
         }
     }
+}
+
+fn to_buffer_with_length(msg: &impl Message) -> Vec<u8>{
+    let encoded = msg.encode_to_vec();
+    // add message length in bytes as a big endian u32 at start of message to enable delimiting when decoding a stream
+    let length = Vec::from((encoded.len() as u32).to_be_bytes());
+    [encoded, length].concat()
 }

@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fmt::{self, Display},
     ops,
 };
@@ -88,17 +87,20 @@ pub trait PointMap {
     fn add_points(&mut self, points: &mut Vec<Point>);
     // TODO: make PointMap impl iterator?
     // returns number removed
-    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) -> u32;
+    fn remove(&mut self, predicate: impl Fn(&Point) -> bool);
+    fn num_removed(&self) -> u32;
 }
 
 pub struct SimplePointMap {
     all_points: Vec<Point>,
+    num_last_removed: u32,
 }
 
 impl SimplePointMap {
     pub fn new() -> SimplePointMap {
         SimplePointMap {
             all_points: Vec::new(),
+            num_last_removed: 0,
         }
     }
 }
@@ -124,24 +126,33 @@ impl PointMap for SimplePointMap {
         self.all_points.append(points);
     }
 
-    fn filter(&mut self, predicate: impl Fn(&Point) -> bool) -> u32 {
+    fn remove(&mut self, predicate: impl Fn(&Point) -> bool) {
         puffin::profile_function!();
 
         let len_before = self.all_points.len();
         self.all_points = self.all_points.drain(..).filter(predicate).collect();
-        (len_before - self.all_points.len()) as u32
+        self.num_last_removed = (len_before - self.all_points.len()) as u32;
+    }
+
+    fn num_removed(&self) -> u32 {
+        self.num_last_removed
     }
 }
 
-const GRID_SIZE: f64 = 0.2;
+// const GRID_SIZE: f64 = 0.2;
 
-struct GridIndex {
-    x: i16,
-    y: i16,
-}
-pub struct GridPointMap {
-    grid: HashMap<GridIndex, Vec<Point>>,
-}
+// struct GridIndex {
+//     x: i16,
+//     y: i16,
+// }
+
+
+// TODO:
+// - cache exact point retrevals
+// - cache previous point retreval in hash set and only consider xor grid squares for the previous and current retreval
+// pub struct GridPointMap {
+//     grid: HashMap<GridIndex, Vec<Point>>,
+// }
 
 // impl PointMap for GridPointMap {
 //     fn get_points(&self, around: Pos, max_dist: f64) -> Vec<Point>{

@@ -15,9 +15,9 @@ pub mod colours {
     }
     pub const YELLOW_MASK: ColourRange = r(c(20, 20, 120), c(45, 255, 255));
     pub const BLUE_MASK: ColourRange = r(c(110, 90, 120), c(120, 255, 255));
-    pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
-    pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
-    pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    // pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    // pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
+    // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
 }
 
 pub mod plan {

@@ -4,9 +4,17 @@
 syntax = "proto3";
 package messages.diagnostic;
 
+import "path.proto";
+
 message Diagnostic {
   float actual_speed = 1;
   float actual_turn = 2;
   float mcu_latency = 3; // to know if its connected
   float voltage = 4; // to know what the battery is at
+}
+
+message FullDiagnostic {
+  messages.path.Path path = 1;
+  messages.path.MapUpdate map_update = 2;
+  Diagnostic diagnostic = 3;
 }

@@ -95,6 +95,7 @@ impl Vision {
             .point_finders
             .iter_mut()
             .flat_map(|finder| finder.get_points(&self.hsv).unwrap())
+            // .map(|p| relative_to_global_point(p, ))
             .collect();
         points
     }
