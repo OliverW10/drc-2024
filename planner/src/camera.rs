@@ -5,7 +5,7 @@ use opencv::{core::{Mat, MatTraitConst}, highgui, videoio::{self, VideoCaptureTr
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
 pub trait ImageProvider {
-    fn get_frame(&mut self) -> Option<Mat>;
+    fn get_frame(&mut self) -> Option<&Mat>;
 }
 
 pub struct Camera {
@@ -24,7 +24,7 @@ impl Camera {
         // cap.set(videoio::CAP_PROP_BUFFERSIZE, 1.0);
         cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0).unwrap();
         cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
-        let mut frame = Mat::default();
+        let frame = Mat::default();
 
         Camera {
             cap: cap,
@@ -34,7 +34,9 @@ impl Camera {
 }
 
 impl ImageProvider for Camera {
-    fn get_frame(&mut self) -> Option<Mat>{
+    fn get_frame(&mut self) -> Option<&Mat>{
+        puffin::profile_function!();
+
         self.cap.read(&mut self.frame).unwrap();
         if self.frame.size().unwrap().width > 0 && SHOULD_DISPLAY_VIDEO {
             highgui::imshow("window", &self.frame).unwrap();
@@ -47,7 +49,7 @@ impl ImageProvider for Camera {
             }
         }
 
-        Some(self.frame)
+        Some(&self.frame)
     }
 }
 
@@ -62,7 +64,7 @@ impl Video {
 }
 
 impl ImageProvider for Video {
-    fn get_frame(&mut self) -> Option<Mat> {
+    fn get_frame(&mut self) -> Option<&Mat> {
         None
     }
 }

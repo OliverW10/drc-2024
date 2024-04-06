@@ -21,8 +21,8 @@ message Path {
 }
 
 message MapUpdate {
-  uint32 num_deleted = 1;
-  repeated MapPoint points_added = 2;
+  repeated MapPoint points_added = 1;
+  repeated uint32 removed_ids = 2;
 }
 
 enum PointType {
@@ -37,4 +37,5 @@ message MapPoint {
   float x = 1;
   float y = 2;
   PointType point_type = 3;
+  uint32 id = 4;
 }
