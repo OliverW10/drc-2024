@@ -80,6 +80,7 @@ pub struct Point {
     pub pos: Pos,
     pub expire_at: f64,
     pub point_type: PointType,
+    pub id: u32,
 }
 
 pub trait PointMap {
@@ -145,7 +146,6 @@ impl PointMap for SimplePointMap {
 //     x: i16,
 //     y: i16,
 // }
-
 
 // TODO:
 // - cache exact point retrevals

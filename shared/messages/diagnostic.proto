@@ -9,8 +9,8 @@ import "path.proto";
 message Diagnostic {
   float actual_speed = 1;
   float actual_turn = 2;
-  float mcu_latency = 3; // to know if its connected
-  float voltage = 4; // to know what the battery is at
+  float framerate_avg = 3;
+  float framerate_90 = 4;
 }
 
 message FullDiagnostic {

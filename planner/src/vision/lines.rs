@@ -101,6 +101,7 @@ impl ObjectFinder for LineFinder {
                 },
                 expire_at: confidence,
                 point_type: self.line_type,
+                id: rand::random(),
             })
             .collect())
     }

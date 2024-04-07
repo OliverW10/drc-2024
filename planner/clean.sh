@@ -1,0 +1,1 @@
+rm session_*.log

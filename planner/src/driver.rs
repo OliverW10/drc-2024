@@ -12,7 +12,6 @@ impl IDriver for PwmDriver {
     fn drive(&self, command: SimpleDrive) {}
 }
 
-
 pub struct SerialDriver {}
 
 impl SerialDriver {

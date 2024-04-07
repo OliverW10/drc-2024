@@ -1,9 +1,20 @@
 
 // TcpListener, tokio, socket2
 
-use std::{io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, SystemTime}};
-
+use std::{borrow::BorrowMut, io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant, SystemTime}};
 use eframe::egui;
+use prost::Message;
+mod messages {
+    pub mod path {
+        include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
+    }
+    pub mod diagnostic {
+        include!(concat!(env!("OUT_DIR"), "/messages.diagnostic.rs"));
+    }
+    pub mod command {
+        include!(concat!(env!("OUT_DIR"), "/messages.commands.rs"));
+    }
+}
 
 enum State{
     OFF,
@@ -36,6 +47,18 @@ fn state_selector(ui: &mut egui::Ui, current_state: &mut State) {
     });
 }
 
+fn wait_to_connect() -> TcpStream {
+    let car_addr = SocketAddr::from(([127, 0, 0, 1], 3141));
+    loop {
+        println!("Trying to connect");
+        match TcpStream::connect(car_addr) {
+            Ok(connection) => return connection,
+            Err(e) => println!("Connection failed '{}', retying in 1s", e.to_string()),
+        };
+        thread::sleep(Duration::from_secs(1));
+    }
+}
+
 
 fn main() -> Result<(), eframe::Error> {
     // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -45,28 +68,37 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
     
-    const PING_PERIOD: f64 = 0.02;
-    let car_addr = SocketAddr::from(([192, 168, 0, 100], 3141));
 
-    let command_mutex = Arc::new(Mutex::new(0));
-    let reading_mutex = Arc::new(Mutex::new(0));
+    let command_main = Arc::new(Mutex::new(messages::command::DriveCommand::default()));
+    let reading_main = Arc::new(Mutex::new(messages::diagnostic::FullDiagnostic::default()));
 
-    let connection_command = Arc::clone(&command_mutex);
-    let connection_reading = Arc::clone(&reading_mutex);
-    let mut connection = TcpStream::connect(car_addr).unwrap();
+    let command_comms = Arc::clone(&command_main);
+    let reading_comms = Arc::clone(&reading_main);
+    let mut latency = Arc::new(Mutex::new(Duration::from_secs_f32(1.)));
+
+    let mut connection = wait_to_connect();
+    
     thread::spawn(move || {
         let mut buf = [0; 4096];
         loop {
-            let command = connection_command.lock();
-            // connection.write(vec![]);
-            connection.read(&mut buf[..]).unwrap();
-            std::thread::sleep(Duration::from_millis(20));
+            {
+                let command = command_comms.lock().unwrap();
+                let mut diagnostic = reading_comms.lock().unwrap();
+                let mut latency = latency.lock().unwrap();
+                
+                let message_sent_at = Instant::now();
+                connection.write(&command.encode_length_delimited_to_vec()).unwrap();
+                connection.read(&mut buf[..]).unwrap();
+                latency.borrow_mut() = message_sent_at.elapsed();
+
+                diagnostic.merge_length_delimited(&buf[..]).unwrap();
+            }
+            std::thread::sleep(Duration::from_secs_f64(0.33));
         }
     });
 
     // Our application state:
     let mut state = State::OFF;
-    let mut last_msg_at = SystemTime::now();
     let mut ip = String::new();
 
     eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
@@ -77,11 +109,13 @@ fn main() -> Result<(), eframe::Error> {
             });
             ui.heading("UTS DRC 24");
             state_selector(ui, &mut state);
+
+            let mut x = command_main.lock().unwrap();
+            x.throttle = 0.2;
+            x.throttle = 0.2;
             
-            let since_last_msg = SystemTime::now().duration_since(last_msg_at).unwrap().as_secs_f64();
-            let latency_ms = since_last_msg * 1000.;
-            let is_connected = latency_ms < 100.;
-            ui.label(format!("Connected: {is_connected} latency: {latency_ms}ms"));
+            let latency_ms = latency.as_secs_f64() * 1000.;
+            ui.label(format!("Latency: {latency_ms}ms"));
         });
     })
 }

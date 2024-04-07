@@ -181,12 +181,14 @@ impl Planner {
 
             if current.steps > PLAN_STEPS {
                 let all_points = points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0);
-                println!("{} points, final path cost: {}, evaluated {} paths", all_points.len(), current.distance, total_paths);
-                let final_path = reconstruct_path(current);
-                draw_map_debug(
-                    &all_points,
-                    &final_path,
+                println!(
+                    "{} points, final path cost: {}, evaluated {} paths",
+                    all_points.len(),
+                    current.distance,
+                    total_paths
                 );
+                let final_path = reconstruct_path(current);
+                draw_map_debug(&all_points, &final_path);
                 return final_path;
             }
 
@@ -216,13 +218,21 @@ fn reconstruct_path(final_node: PathNodeData) -> Path {
     puffin::profile_function!();
 
     let mut path = Vec::new();
-    path.push(PathPoint { pos: final_node.state.pos, angle: final_node.state.angle, curvature: final_node.state.curvature });
+    path.push(PathPoint {
+        pos: final_node.state.pos,
+        angle: final_node.state.angle,
+        curvature: final_node.state.curvature,
+    });
     let mut current = final_node.prev;
     loop {
         match current.as_ref() {
             PathNode::End => break,
             PathNode::Node(node_data) => {
-                path.push(PathPoint { pos: node_data.state.pos, angle: node_data.state.angle, curvature: node_data.state.curvature });
+                path.push(PathPoint {
+                    pos: node_data.state.pos,
+                    angle: node_data.state.angle,
+                    curvature: node_data.state.curvature,
+                });
                 current = node_data.prev.clone();
             }
         }

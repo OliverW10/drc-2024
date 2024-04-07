@@ -1,6 +1,8 @@
-use opencv::{core::{Mat, MatTraitConst}, highgui, videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst}};
-
-
+use opencv::{
+    core::{Mat, MatTraitConst},
+    highgui,
+    videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst},
+};
 
 const SHOULD_DISPLAY_VIDEO: bool = true;
 
@@ -16,7 +18,7 @@ pub struct Camera {
 impl Camera {
     pub fn new() -> Camera {
         let mut cap = videoio::VideoCapture::new(0, videoio::CAP_V4L2).unwrap();
-        
+
         let opened = videoio::VideoCapture::is_opened(&cap).unwrap();
         if !opened {
             panic!("Unable to open default camera!");
@@ -34,7 +36,7 @@ impl Camera {
 }
 
 impl ImageProvider for Camera {
-    fn get_frame(&mut self) -> Option<&Mat>{
+    fn get_frame(&mut self) -> Option<&Mat> {
         puffin::profile_function!();
 
         self.cap.read(&mut self.frame).unwrap();
@@ -53,9 +55,7 @@ impl ImageProvider for Camera {
     }
 }
 
-struct Video {
-
-}
+struct Video {}
 
 impl Video {
     pub fn new() -> Video {

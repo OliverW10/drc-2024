@@ -1,15 +1,15 @@
+mod camera;
+mod comms;
 mod config;
 mod display;
 mod driver;
 mod follower;
+mod logging;
 mod planner;
 mod points;
 mod pruner;
 mod state;
 mod vision;
-mod comms;
-mod logging;
-mod camera;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -29,8 +29,14 @@ use planner::Planner;
 use points::{PointMap, SimplePointMap};
 use vision::Vision;
 
-use crate::{camera::{Camera, ImageProvider}, comms::NetworkComms, logging::{AggregateLogger, FileLogger, Logger}, messages::diagnostic::Diagnostic, points::Pos, state::DriveState};
-
+use crate::{
+    camera::{Camera, ImageProvider},
+    comms::NetworkComms,
+    logging::{AggregateLogger, FileLogger, Logger},
+    messages::diagnostic::Diagnostic,
+    points::Pos,
+    state::DriveState,
+};
 
 fn main() -> Result<()> {
     let mut camera = Camera::new();
@@ -51,10 +57,10 @@ fn main() -> Result<()> {
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
-        
+
         let frame = match camera.get_frame() {
             Some(x) => x,
-            None => return Ok(())
+            None => return Ok(()),
         };
 
         let mut new_points = vision.get_points_from_image(&frame);
@@ -64,16 +70,21 @@ fn main() -> Result<()> {
         point_map.remove(pruner::old_points_predicate());
 
         let path = planner.find_path(current_state, &point_map);
-        
+
         let command = follower.command_to_follow_path(&path);
 
         driver.drive(command);
 
-        logger.send(&path, &new_points, point_map.num_removed(), &Diagnostic::default());
+        logger.send(
+            &path,
+            &new_points,
+            point_map.num_removed(),
+            &Diagnostic::default(),
+        );
     }
 }
 
-fn setup_profiler() -> puffin_http::Server{
+fn setup_profiler() -> puffin_http::Server {
     // https://github.com/EmbarkStudios/puffin/tree/main/puffin
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
