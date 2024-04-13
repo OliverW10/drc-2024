@@ -10,7 +10,7 @@ use crate::{
     config::plan::PLAN_STEP_SIZE_METERS,
     planner::{get_possible_next_states, Path},
     points::{Point, PointType, Pos},
-    state::DriveState,
+    state::CarState,
 };
 
 fn map_to_img(pos: &Pos) -> opencv::core::Point {
@@ -84,7 +84,7 @@ pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
 
     draw_options(
         &mut display,
-        DriveState {
+        CarState {
             pos: Pos { x: -1., y: 1. },
             angle: -1.1,
             curvature: 0.,
@@ -97,7 +97,7 @@ pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
 
 const DISPLAY_ALL_OPTIONS: bool = false;
 
-fn draw_options(img: &mut Mat, start: DriveState, depth: i32) {
+fn draw_options(img: &mut Mat, start: CarState, depth: i32) {
     if !DISPLAY_ALL_OPTIONS {
         return;
     }
@@ -112,7 +112,7 @@ fn draw_options(img: &mut Mat, start: DriveState, depth: i32) {
 }
 
 const DRAW_RES: u32 = 10;
-fn draw_state_line(img: &mut Mat, start: DriveState) {
+fn draw_state_line(img: &mut Mat, start: CarState) {
     for dist in (0..DRAW_RES).map(|i| (i as f64 / DRAW_RES as f64) * PLAN_STEP_SIZE_METERS) {
         let prev = start.step_distance(dist);
         let next = start.step_distance(dist + PLAN_STEP_SIZE_METERS / DRAW_RES as f64);

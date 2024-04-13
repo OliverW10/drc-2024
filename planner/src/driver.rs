@@ -1,29 +1,114 @@
-use crate::{messages::path::SimpleDrive, state::DriveState};
+use std::{fs::File, io::Write, time::Instant};
 
-pub trait IDriver {
-    fn drive(&self, command: SimpleDrive);
+use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
+
+pub struct CarCommander {
+    driver: Box<dyn Driver>,
+    steerer: Box<dyn Steerer>,
+    state_provider: BlindRelativeStateProvider,
 }
 
-pub struct PwmDriver {}
+impl CarCommander {
+    pub fn new(driver: Box<dyn Driver>, steerer: Box<dyn Steerer>) -> CarCommander {
+        CarCommander {
+            driver: driver,
+            steerer: steerer,
+            state_provider: BlindRelativeStateProvider::new(),
+        }
+    }
 
-impl PwmDriver {}
+    pub fn drive(&mut self, command: SimpleDrive) {
+        self.driver.drive_speed(command.speed);
+        self.steerer.drive_steer(command.curvature);
+        self.state_provider.set_command(command);
+    }
 
-impl IDriver for PwmDriver {
-    fn drive(&self, command: SimpleDrive) {}
+    pub fn get_state_provider(&self) -> &impl RelativeStateProvider {
+        &self.state_provider
+    } 
 }
 
-pub struct SerialDriver {}
 
-impl SerialDriver {
-    pub fn new() -> SerialDriver {
-        SerialDriver {}
+type MetersPerSecond = f32;
+type RadiansPerMeter = f32;
+
+pub trait Driver {
+    fn drive_speed(&mut self, speed: MetersPerSecond);
+}
+
+pub trait Steerer {
+    fn drive_steer(&mut self, curvature: RadiansPerMeter);
+}
+
+pub struct PwmDriver {
+}
+
+impl PwmDriver {
+    pub fn new() -> PwmDriver {
+        PwmDriver {}
     }
 }
 
-impl IDriver for SerialDriver {
-    fn drive(&self, command: SimpleDrive) {}
+impl Steerer for PwmDriver {
+    fn drive_steer(&mut self, _curvature: RadiansPerMeter) {
+        // TODO
+    }
 }
 
+pub struct SerialDriver {
+    port_file: File,
+}
+
+impl SerialDriver {
+    pub fn new() -> SerialDriver {
+        SerialDriver {
+            port_file: File::open("/dev/ttyACM0").unwrap()
+        }
+    }
+}
+
+const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
+
+impl Driver for SerialDriver {
+    fn drive_speed(&mut self, speed: MetersPerSecond) {
+        let rps = speed / METERS_PER_ROTATION;
+        self.port_file.write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes());
+    }
+}
+
+
+
 pub trait RelativeStateProvider {
-    fn get_movement(&mut self) -> DriveState;
+    fn get_movement(&self) -> CarState;
+}
+
+struct BlindRelativeStateProvider {
+    last_command: SimpleDrive,
+    last_command_time: Instant,
+}
+
+impl RelativeStateProvider for BlindRelativeStateProvider {
+    fn get_movement(&self) -> CarState {
+        CarState {
+            pos: Pos {x: 0., y: 0.},
+            angle: 0.,
+            curvature: self.last_command.curvature as f64,
+            speed: self.last_command.speed as f64,
+        }.step_time(self.last_command_time.elapsed())
+    }
+}
+
+
+impl BlindRelativeStateProvider {
+    fn new() -> BlindRelativeStateProvider {
+        BlindRelativeStateProvider {
+            last_command: SimpleDrive::default(),
+            last_command_time: Instant::now(),
+        }
+    }
+
+    fn set_command(&mut self, command: SimpleDrive){
+        self.last_command = command;
+        self.last_command_time = Instant::now();
+    }
 }

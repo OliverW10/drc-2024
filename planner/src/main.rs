@@ -22,8 +22,10 @@ mod messages {
     }
 }
 
-use driver::{IDriver, SerialDriver};
+use comms::Commander;
+use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
+use messages::{command::CommandType, path::SimpleDrive};
 use opencv::Result;
 use planner::Planner;
 use points::{PointMap, SimplePointMap};
@@ -35,21 +37,22 @@ use crate::{
     logging::{AggregateLogger, FileLogger, Logger},
     messages::diagnostic::Diagnostic,
     points::Pos,
-    state::DriveState,
+    state::CarState,
 };
 
 fn main() -> Result<()> {
     let mut camera = Camera::new();
-    let mut point_map = SimplePointMap::new();
+    let point_map = &mut SimplePointMap::new() as &mut dyn PointMap;
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
-    let driver = SerialDriver::new();
-    let network_comms = Box::new(NetworkComms::new());
-    let file_logger = FileLogger::new();
-    let mut logger = AggregateLogger::new(vec![network_comms, Box::new(file_logger)]);
+    let mut driver = CarCommander::new(Box::new(SerialDriver::new()), Box::new(PwmDriver::new()));
+    let odometry = driver.get_state_provider();
+    let mut network_comms = NetworkComms::new();
+    let mut file_logger = FileLogger::new();
+    let mut logger = AggregateLogger::new(vec![&mut file_logger]);
 
-    let mut current_state = DriveState::default();
+    let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;
     current_state.pos = Pos { x: 0.1, y: 0.3 };
 
@@ -63,22 +66,30 @@ fn main() -> Result<()> {
             None => return Ok(()),
         };
 
-        let mut new_points = vision.get_points_from_image(&frame);
+        current_state += odometry.get_movement();
+        // TODO: split things that i want to call multiple times into multiple objects?
+        let network_command = network_comms.get_latest_message().unwrap_or_default();
+
+        let mut new_points = vision.get_points_from_image(&frame, current_state);
 
         point_map.add_points(&mut new_points);
 
-        point_map.remove(pruner::old_points_predicate());
+        point_map.remove(&pruner::old_points_predicate());
 
-        let path = planner.find_path(current_state, &point_map);
+        let path = planner.find_path(current_state, point_map);
 
-        let command = follower.command_to_follow_path(&path);
+        let command = match CommandType::try_from(network_command.state).unwrap_or_default() {
+            CommandType::StateAuto => follower.command_to_follow_path(&path),
+            CommandType::StateManual => SimpleDrive { speed: network_command.throttle, curvature: network_command.turn },
+            CommandType::StateOff => SimpleDrive { speed: 0., curvature: 0. },
+        };
 
         driver.drive(command);
 
         logger.send(
             &path,
             &new_points,
-            point_map.num_removed(),
+            &point_map.get_last_removed_ids(),
             &Diagnostic::default(),
         );
     }

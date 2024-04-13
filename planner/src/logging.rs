@@ -12,7 +12,7 @@ pub trait Logger {
         &mut self,
         path: &planner::Path,
         new_points: &Vec<points::Point>,
-        num_deleted: u32,
+        removed_points: &Vec<u32>,
         diagnostic: &messages::diagnostic::Diagnostic,
     ) {
         let path_dto = Some(messages::path::Path {
@@ -88,17 +88,18 @@ impl Logger for FileLogger {
 }
 
 // Simple struct to multicast logging
-pub struct AggregateLogger {
-    loggers: Vec<Box<dyn Logger>>,
+pub struct AggregateLogger<'a> {
+    loggers: Vec<&'a mut dyn Logger>,
 }
 
-impl AggregateLogger {
-    pub fn new(loggers: Vec<Box<dyn Logger>>) -> AggregateLogger {
-        AggregateLogger { loggers: loggers }
+// why need two?
+impl<'a> AggregateLogger<'a> {
+    pub fn new(loggers: Vec<&'a mut dyn Logger>) -> AggregateLogger {
+        AggregateLogger { loggers }
     }
 }
 
-impl Logger for AggregateLogger {
+impl<'a> Logger for AggregateLogger<'a> {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         for logger in self.loggers.iter_mut() {
             logger.send_core(message);

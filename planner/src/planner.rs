@@ -32,14 +32,14 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 use crate::config::plan::{MAX_CURVATURE, PLAN_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
 use crate::points::{Point, PointMap, Pos};
-use crate::state::DriveState;
+use crate::state::CarState;
 
 mod distance_calculators {
     use crate::points::Point;
 
-    use super::DriveState;
+    use super::CarState;
 
-    pub fn calculate_avoid_edge_weight_for_point(state: DriveState, point: &Point) -> f64 {
+    pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {
         // add weight for being close to the point
         let max_weight = 5.0;
         let start_dist = 0.4;
@@ -54,20 +54,20 @@ mod distance_calculators {
         }
     }
 
-    pub fn calculate_travel_direction_weight_for_point(state: DriveState, point: &Point) -> f64 {
+    pub fn calculate_travel_direction_weight_for_point(state: CarState, point: &Point) -> f64 {
         // add weight for travelling the wrong angular direction around points
         // extra for arrow points and none for obstacle points
         0.0
     }
 
-    pub fn calculate_curvature_weight(state: DriveState) -> f64 {
+    pub fn calculate_curvature_weight(state: CarState) -> f64 {
         // add weighting to enourage taking smoother lines
         state.curvature.abs().powf(2.0) * 0.2
     }
 }
 
 // calculates the distance/traversability map used for pathfinding
-fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
+fn distance(state: CarState, nearby_points: &Vec<&Point>) -> f64 {
     puffin::profile_function!();
     let mut total_weight = -PLAN_STEP_SIZE_METERS;
 
@@ -88,14 +88,14 @@ fn distance(state: DriveState, nearby_points: &Vec<&Point>) -> f64 {
     total_weight
 }
 
-pub fn get_possible_next_states(state: DriveState) -> Vec<DriveState> {
+pub fn get_possible_next_states(state: CarState) -> Vec<CarState> {
     puffin::profile_function!();
 
     let mut output = Vec::new();
     let turn_options = 3; // per side
     for new_turn_index in -turn_options..turn_options + 1 {
         let new_curvature = MAX_CURVATURE * (new_turn_index as f64 / turn_options as f64);
-        let new_drive_state = DriveState {
+        let new_drive_state = CarState {
             curvature: new_curvature,
             ..state
         };
@@ -116,7 +116,7 @@ pub struct Path {
 
 #[derive(Clone)]
 struct PathNodeData {
-    pub state: DriveState,
+    pub state: CarState,
     pub distance: f64,
     pub prev: Rc<PathNode>,
     pub steps: u32,
@@ -163,7 +163,7 @@ impl Planner {
         Planner {}
     }
 
-    pub fn find_path(&self, start_state: DriveState, points: &impl PointMap) -> Path {
+    pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
         // https://doc.rust-lang.org/std/collections/binary_heap/index.html
@@ -194,7 +194,7 @@ impl Planner {
 
             let next_drive_states = get_possible_next_states(current.state).into_iter();
             let relevant_points = points.get_points_in_area(current.state.pos, 0.5); // TODO: magic number
-            let get_node_from_state = |state: DriveState| PathNodeData {
+            let get_node_from_state = |state: CarState| PathNodeData {
                 state: state.step_distance(PLAN_STEP_SIZE_METERS),
                 distance: current.distance + distance(state, &relevant_points),
                 prev: current_rc.clone(),

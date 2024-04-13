@@ -11,7 +11,7 @@ use crate::{logging::Logger, messages};
 
 // Something to recive commands from
 pub trait Commander {
-    fn get_latest_message() -> Option<()>;
+    fn get_latest_message(&self) -> Option<messages::command::DriveCommand>;
 }
 
 pub struct NetworkComms {
@@ -89,7 +89,7 @@ impl Logger for NetworkComms {
 }
 
 impl Commander for NetworkComms {
-    fn get_latest_message() -> Option<()> {
-        Some(())
+    fn get_latest_message(&self) -> Option<messages::command::DriveCommand> {
+        Some(messages::command::DriveCommand::default())
     }
 }

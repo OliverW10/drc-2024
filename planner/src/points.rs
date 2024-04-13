@@ -86,22 +86,20 @@ pub struct Point {
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
     fn add_points(&mut self, points: &mut Vec<Point>);
-    // TODO: make PointMap impl iterator?
-    // returns number removed
-    fn remove(&mut self, predicate: impl Fn(&Point) -> bool);
-    fn num_removed(&self) -> u32;
+    fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
+    fn get_last_removed_ids(&mut self) -> Vec<u32>;
 }
 
 pub struct SimplePointMap {
     all_points: Vec<Point>,
-    num_last_removed: u32,
+    removed_ids: Vec<u32>,
 }
 
 impl SimplePointMap {
     pub fn new() -> SimplePointMap {
         SimplePointMap {
             all_points: Vec::new(),
-            num_last_removed: 0,
+            removed_ids: Vec::new(),
         }
     }
 }
@@ -127,16 +125,16 @@ impl PointMap for SimplePointMap {
         self.all_points.append(points);
     }
 
-    fn remove(&mut self, predicate: impl Fn(&Point) -> bool) {
+    fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
         puffin::profile_function!();
-
-        let len_before = self.all_points.len();
-        self.all_points = self.all_points.drain(..).filter(predicate).collect();
-        self.num_last_removed = (len_before - self.all_points.len()) as u32;
+        self.all_points.retain(|item| {
+            if predicate(item) { self.removed_ids.push(item.id); false } else { true }
+        });
     }
 
-    fn num_removed(&self) -> u32 {
-        self.num_last_removed
+    fn get_last_removed_ids(&mut self) -> Vec<u32> {
+        puffin::profile_function!();
+        self.removed_ids.drain(..).collect()
     }
 }
 
