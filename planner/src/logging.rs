@@ -47,7 +47,7 @@ pub trait Logger {
             .collect();
         let map_update_dto = Some(messages::path::MapUpdate {
             points_added: new_points_dtos,
-            removed_ids: vec![],
+            removed_ids: removed_points.to_vec(),
         });
 
         let diagnostic_dto = Some(diagnostic.clone());
@@ -85,31 +85,4 @@ impl Logger for FileLogger {
             Ok(n) => println!("had {} bytes, wrote {} bytes", message.len(), n),
         };
     }
-}
-
-// Simple struct to multicast logging
-pub struct AggregateLogger<'a> {
-    loggers: Vec<&'a mut dyn Logger>,
-}
-
-// why need two?
-impl<'a> AggregateLogger<'a> {
-    pub fn new(loggers: Vec<&'a mut dyn Logger>) -> AggregateLogger {
-        AggregateLogger { loggers }
-    }
-}
-
-impl<'a> Logger for AggregateLogger<'a> {
-    fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
-        for logger in self.loggers.iter_mut() {
-            logger.send_core(message);
-        }
-    }
-}
-
-fn to_buffer_with_length(msg: &impl Message) -> Vec<u8> {
-    let encoded = msg.encode_to_vec();
-    // add message length in bytes as a big endian u32 at start of message to enable delimiting when decoding a stream
-    let length = Vec::from((encoded.len() as u32).to_be_bytes());
-    [encoded, length].concat()
 }

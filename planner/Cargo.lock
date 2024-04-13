@@ -1579,6 +1579,7 @@ dependencies = [
  "puffin_viewer",
  "rand",
  "rppal",
+ "serial2",
  "time",
  "uom",
 ]
@@ -2012,6 +2013,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb3622f419d1296904700073ea6cc23ad690adbd66f13ea683df73298736f0c1"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "serial2"
+version = "0.2.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "532d7a51dc8416e952987dbd39dd5e24fb9d1cbe86f1263521ec5032cb7ff0fb"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "winapi",
 ]
 
 [[package]]

@@ -121,14 +121,13 @@ impl PointMap for SimplePointMap {
 
     fn add_points(&mut self, points: &mut Vec<Point>) {
         puffin::profile_function!();
-
         self.all_points.append(points);
     }
 
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
         puffin::profile_function!();
         self.all_points.retain(|item| {
-            if predicate(item) { self.removed_ids.push(item.id); false } else { true }
+            if predicate(item) { true } else { self.removed_ids.push(item.id); false }
         });
     }
 

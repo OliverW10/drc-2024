@@ -1,7 +1,7 @@
 
 // TcpListener, tokio, socket2
 
-use std::{borrow::BorrowMut, io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant, SystemTime}};
+use std::{borrow::Borrow, io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 use eframe::egui;
 use prost::Message;
 mod messages {
@@ -16,33 +16,33 @@ mod messages {
     }
 }
 
-enum State{
+enum CarMode {
     OFF,
     AUTO,
     MANUAL,
 }
 
-impl ToString for State {
+impl ToString for CarMode {
     fn to_string(&self) -> String {
         match *self {
-            State::OFF => "Disabled",
-            State::AUTO => "Auto",
-            State::MANUAL => "Manual"
+            CarMode::OFF => "Disabled",
+            CarMode::AUTO => "Auto",
+            CarMode::MANUAL => "Manual"
         }.to_string()
     }
 }
 
-fn state_selector(ui: &mut egui::Ui, current_state: &mut State) {
+fn state_selector(ui: &mut egui::Ui, current_state: &mut CarMode) {
     ui.horizontal(|ui| {
         ui.label(current_state.to_string());
         if ui.button("Stop").clicked() {
-            *current_state = State::OFF;
+            *current_state = CarMode::OFF;
         }
         if ui.button("Auto").clicked() {
-            *current_state = State::AUTO;
+            *current_state = CarMode::AUTO;
         }
         if ui.button("Manual").clicked() {
-            *current_state = State::MANUAL;
+            *current_state = CarMode::MANUAL;
         }
     });
 }
@@ -59,6 +59,12 @@ fn wait_to_connect() -> TcpStream {
     }
 }
 
+#[derive(Default)]
+struct State {
+    command_to_send: messages::command::DriveCommand,
+    last_recieved_diagnostic: messages::diagnostic::FullDiagnostic,
+    last_latency: Duration,
+}
 
 fn main() -> Result<(), eframe::Error> {
     // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -69,12 +75,8 @@ fn main() -> Result<(), eframe::Error> {
     };
     
 
-    let command_main = Arc::new(Mutex::new(messages::command::DriveCommand::default()));
-    let reading_main = Arc::new(Mutex::new(messages::diagnostic::FullDiagnostic::default()));
-
-    let command_comms = Arc::clone(&command_main);
-    let reading_comms = Arc::clone(&reading_main);
-    let mut latency = Arc::new(Mutex::new(Duration::from_secs_f32(1.)));
+    let state_main = Arc::new(Mutex::new(State::default()));
+    let state_comms = Arc::clone(&state_main);
 
     let mut connection = wait_to_connect();
     
@@ -82,23 +84,21 @@ fn main() -> Result<(), eframe::Error> {
         let mut buf = [0; 4096];
         loop {
             {
-                let command = command_comms.lock().unwrap();
-                let mut diagnostic = reading_comms.lock().unwrap();
-                let mut latency = latency.lock().unwrap();
+                let mut local_state = state_comms.lock().unwrap();
                 
                 let message_sent_at = Instant::now();
-                connection.write(&command.encode_length_delimited_to_vec()).unwrap();
+                connection.write(&local_state.command_to_send.encode_length_delimited_to_vec()).unwrap();
                 connection.read(&mut buf[..]).unwrap();
-                latency.borrow_mut() = message_sent_at.elapsed();
+                local_state.last_latency = message_sent_at.elapsed();
 
-                diagnostic.merge_length_delimited(&buf[..]).unwrap();
+                local_state.last_recieved_diagnostic.merge_length_delimited(&buf[..]).unwrap();
             }
-            std::thread::sleep(Duration::from_secs_f64(0.33));
+            std::thread::sleep(Duration::from_secs_f64(0.033));
         }
     });
 
     // Our application state:
-    let mut state = State::OFF;
+    let mut mode = CarMode::OFF;
     let mut ip = String::new();
 
     eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
@@ -108,14 +108,22 @@ fn main() -> Result<(), eframe::Error> {
                 ui.text_edit_singleline(&mut ip);
             });
             ui.heading("UTS DRC 24");
-            state_selector(ui, &mut state);
+            state_selector(ui, &mut mode);
 
-            let mut x = command_main.lock().unwrap();
-            x.throttle = 0.2;
-            x.throttle = 0.2;
-            
-            let latency_ms = latency.as_secs_f64() * 1000.;
-            ui.label(format!("Latency: {latency_ms}ms"));
+            {
+                let state = state_main.lock().unwrap();
+                let latency_ms = state.last_latency.as_secs_f64() * 1000.;
+                ui.label(format!("Latency: {latency_ms}ms"));
+            }
         });
+        {
+            let mut state = state_main.lock().unwrap();
+            state.command_to_send = messages::command::DriveCommand {
+                state: (*(mode.borrow().clone())) as i32,
+                throttle: 0.,
+                turn: 0.,
+            };
+
+        }
     })
 }

@@ -40,11 +40,11 @@ impl ImageProvider for Camera {
         puffin::profile_function!();
 
         self.cap.read(&mut self.frame).unwrap();
-        if self.frame.size().unwrap().width > 0 && SHOULD_DISPLAY_VIDEO {
-            highgui::imshow("window", &self.frame).unwrap();
-        }
-
         if SHOULD_DISPLAY_VIDEO {
+            if self.frame.size().unwrap().width > 0 {
+                highgui::imshow("window", &self.frame).unwrap();
+            }
+
             let key = highgui::wait_key(10).unwrap();
             if key > 0 && key != 255 {
                 return None;
@@ -58,9 +58,9 @@ impl ImageProvider for Camera {
 struct Video {}
 
 impl Video {
-    pub fn new() -> Video {
-        Video {}
-    }
+    // pub fn new() -> Video {
+    //     Video {}
+    // }
 }
 
 impl ImageProvider for Video {

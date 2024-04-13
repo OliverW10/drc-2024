@@ -1,5 +1,5 @@
-use std::{fs::File, io::Write, time::Instant};
-
+use std::{fs::File, time::Instant};
+use serial2::{self, SerialPort};
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
 
 pub struct CarCommander {
@@ -56,13 +56,22 @@ impl Steerer for PwmDriver {
 }
 
 pub struct SerialDriver {
-    port_file: File,
+    port_file: Option<SerialPort>,
 }
 
 impl SerialDriver {
-    pub fn new() -> SerialDriver {
+    pub fn new(name: &str) -> SerialDriver {
         SerialDriver {
-            port_file: File::open("/dev/ttyACM0").unwrap()
+            port_file: match SerialPort::open(name, 115200) {
+                Ok(file) => {
+                    println!("Successfully opened {}", name);
+                    Some(file)
+                },
+                Err(_) => {
+                    println!("Could not open {}", name);
+                    None
+                }
+            }
         }
     }
 }
@@ -72,7 +81,9 @@ const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
 impl Driver for SerialDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
         let rps = speed / METERS_PER_ROTATION;
-        self.port_file.write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes());
+        if let Some(serial) = &self.port_file {
+            serial.write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes()).unwrap();
+        }
     }
 }
 

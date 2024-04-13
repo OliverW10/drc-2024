@@ -14,9 +14,10 @@ fn should_keep_point(now: Duration, point: &Point) -> bool {
     point.expire_at > now.as_secs_f64()
 }
 
+// Get the value the line finder will set expire_at to for new points
 pub fn get_line_exiry() -> f64 {
     let keep_for = Duration::from_secs_f64(0.2);
     // TODO: is monotonic?
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() + keep_for;
-    now.as_secs_f64()
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    (now + keep_for).as_secs_f64()
 }

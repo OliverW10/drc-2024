@@ -1,13 +1,13 @@
 use crate::{
-    points::{Point, PointType},
-    vision::{ColourRange, ObjectFinder},
+    points::Point,
+    vision::ObjectFinder,
 };
 use opencv::core::Mat;
 
 // Finds points along just the bottom edge of something
 struct ObstacleFinder {
-    obstacle_type: PointType,
-    colour: ColourRange,
+    // obstacle_type: PointType,
+    // colour: ColourRange,
 }
 impl ObstacleFinder {}
 

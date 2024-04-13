@@ -16,6 +16,7 @@ pub trait Commander {
 
 pub struct NetworkComms {
     last_recieved: Arc<Mutex<messages::command::DriveCommand>>,
+// TODO: accumulate diagnotic until it gets sent
     to_send: Arc<Mutex<Box<messages::diagnostic::FullDiagnostic>>>,
 }
 

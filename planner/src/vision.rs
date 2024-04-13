@@ -9,8 +9,8 @@ use opencv::{
 };
 
 use crate::{
-    config::colours::{self, ColourRange},
-    points::{Point, PointType}, state::CarState,
+    config::colours,
+    points::{Point, PointType}, state::CarState, vision::perspective::relative_to_global_point,
 };
 
 use self::{arrow::ArrowFinder, lines::LineFinder};
@@ -95,7 +95,7 @@ impl Vision {
             .point_finders
             .iter_mut()
             .flat_map(|finder| finder.get_points(&self.hsv).unwrap())
-            // .map(|p| relative_to_global_point(p, ))
+            .map(|p| relative_to_global_point(p, state))
             .collect();
         points
     }
