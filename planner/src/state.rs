@@ -32,7 +32,7 @@ impl ops::Add for CarState {
             pos: self.pos + rhs.pos.rotate(self.angle),
             angle: self.angle + rhs.angle,
             curvature: rhs.curvature,
-            speed: rhs.speed
+            speed: rhs.speed,
         }
     }
 }

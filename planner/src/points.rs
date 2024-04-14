@@ -127,7 +127,12 @@ impl PointMap for SimplePointMap {
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
         puffin::profile_function!();
         self.all_points.retain(|item| {
-            if predicate(item) { true } else { self.removed_ids.push(item.id); false }
+            if predicate(item) {
+                true
+            } else {
+                self.removed_ids.push(item.id);
+                false
+            }
         });
     }
 

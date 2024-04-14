@@ -1,6 +1,6 @@
-use std::{fs::File, time::Instant};
-use serial2::{self, SerialPort};
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
+use serial2::{self, SerialPort};
+use std::{fs::File, time::Instant};
 
 pub struct CarCommander {
     driver: Box<dyn Driver>,
@@ -25,9 +25,8 @@ impl CarCommander {
 
     pub fn get_state_provider(&self) -> &impl RelativeStateProvider {
         &self.state_provider
-    } 
+    }
 }
-
 
 type MetersPerSecond = f32;
 type RadiansPerMeter = f32;
@@ -40,8 +39,7 @@ pub trait Steerer {
     fn drive_steer(&mut self, curvature: RadiansPerMeter);
 }
 
-pub struct PwmDriver {
-}
+pub struct PwmDriver {}
 
 impl PwmDriver {
     pub fn new() -> PwmDriver {
@@ -66,12 +64,12 @@ impl SerialDriver {
                 Ok(file) => {
                     println!("Successfully opened {}", name);
                     Some(file)
-                },
+                }
                 Err(_) => {
                     println!("Could not open {}", name);
                     None
                 }
-            }
+            },
         }
     }
 }
@@ -82,12 +80,12 @@ impl Driver for SerialDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
         let rps = speed / METERS_PER_ROTATION;
         if let Some(serial) = &self.port_file {
-            serial.write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes()).unwrap();
+            serial
+                .write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes())
+                .unwrap();
         }
     }
 }
-
-
 
 pub trait RelativeStateProvider {
     fn get_movement(&self) -> CarState;
@@ -101,14 +99,14 @@ struct BlindRelativeStateProvider {
 impl RelativeStateProvider for BlindRelativeStateProvider {
     fn get_movement(&self) -> CarState {
         CarState {
-            pos: Pos {x: 0., y: 0.},
+            pos: Pos { x: 0., y: 0. },
             angle: 0.,
             curvature: self.last_command.curvature as f64,
             speed: self.last_command.speed as f64,
-        }.step_time(self.last_command_time.elapsed())
+        }
+        .step_time(self.last_command_time.elapsed())
     }
 }
-
 
 impl BlindRelativeStateProvider {
     fn new() -> BlindRelativeStateProvider {
@@ -118,7 +116,7 @@ impl BlindRelativeStateProvider {
         }
     }
 
-    fn set_command(&mut self, command: SimpleDrive){
+    fn set_command(&mut self, command: SimpleDrive) {
         self.last_command = command;
         self.last_command_time = Instant::now();
     }

@@ -10,7 +10,9 @@ use opencv::{
 
 use crate::{
     config::colours,
-    points::{Point, PointType}, state::CarState, vision::perspective::relative_to_global_point,
+    points::{Point, PointType},
+    state::CarState,
+    vision::perspective::relative_to_global_point,
 };
 
 use self::{arrow::ArrowFinder, lines::LineFinder};
@@ -49,7 +51,11 @@ impl Vision {
         };
     }
 
-    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, state: CarState) -> Vec<Point> {
+    pub fn get_points_from_image(
+        &mut self,
+        image: &opencv::core::Mat,
+        state: CarState,
+    ) -> Vec<Point> {
         puffin::profile_function!();
 
         {

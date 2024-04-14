@@ -649,6 +649,7 @@ dependencies = [
  "eframe",
  "prost",
  "prost-build",
+ "rand",
 ]
 
 [[package]]

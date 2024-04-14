@@ -46,7 +46,10 @@ fn main() -> Result<()> {
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
-    let mut driver = CarCommander::new(Box::new(SerialDriver::new("/dev/ttyACM0")), Box::new(PwmDriver::new()));
+    let mut driver = CarCommander::new(
+        Box::new(SerialDriver::new("/dev/ttyACM0")),
+        Box::new(PwmDriver::new()),
+    );
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
 
@@ -71,15 +74,21 @@ fn main() -> Result<()> {
         let mut new_points = vision.get_points_from_image(&frame, current_state);
 
         point_map.add_points(&mut new_points);
-        
+
         point_map.remove(&pruner::old_points_predicate());
 
         let path = planner.find_path(current_state, point_map);
 
         let command = match CommandMode::try_from(network_command.state).unwrap_or_default() {
             CommandMode::StateAuto => follower.command_to_follow_path(&path),
-            CommandMode::StateManual => SimpleDrive { speed: network_command.throttle, curvature: network_command.turn },
-            CommandMode::StateOff => SimpleDrive { speed: 0., curvature: 0. },
+            CommandMode::StateManual => SimpleDrive {
+                speed: network_command.throttle,
+                curvature: network_command.turn,
+            },
+            CommandMode::StateOff => SimpleDrive {
+                speed: 0.,
+                curvature: 0.,
+            },
         };
 
         driver.drive(command);

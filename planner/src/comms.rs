@@ -67,7 +67,7 @@ impl NetworkComms {
         thread::spawn(move || {
             let mut buf = [0; 2048];
             loop {
-                let bytes_read = stream.read(&mut buf).unwrap();
+                let bytes_read = stream.read(&mut buf).unwrap(); // i think this will panic too if the connection is closed
                 let mut recieved = recieved_mutex.lock().unwrap();
                 recieved.merge_length_delimited(&buf[..]).unwrap();
                 println!("recived {:?}", recieved);
@@ -75,11 +75,18 @@ impl NetworkComms {
                 let to_send_buf = to_send.encode_length_delimited_to_vec();
                 let sent = stream.write(&to_send_buf);
                 if let Err(err) = sent {
-                    println!("Could not sent to client: '{}', closing this recieving thread", err);
+                    println!(
+                        "Could respond to client: '{}', closing this recieving thread",
+                        err
+                    );
                     break;
                 }
 
-                println!("Recieved {} bytes, sending {} bytes", bytes_read, to_send_buf.len());
+                println!(
+                    "Recieved {} bytes, sending {} bytes",
+                    bytes_read,
+                    to_send_buf.len()
+                );
             }
         });
     }

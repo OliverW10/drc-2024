@@ -1,7 +1,4 @@
-use crate::{
-    points::Point,
-    vision::ObjectFinder,
-};
+use crate::{points::Point, vision::ObjectFinder};
 use opencv::core::Mat;
 
 // Finds points along just the bottom edge of something
