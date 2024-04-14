@@ -25,7 +25,7 @@ mod messages {
 use comms::Commander;
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
-use messages::{command::CommandType, path::SimpleDrive};
+use messages::{command::CommandMode, path::SimpleDrive};
 use opencv::Result;
 use planner::Planner;
 use points::{PointMap, SimplePointMap};
@@ -76,10 +76,10 @@ fn main() -> Result<()> {
 
         let path = planner.find_path(current_state, point_map);
 
-        let command = match CommandType::try_from(network_command.state).unwrap_or_default() {
-            CommandType::StateAuto => follower.command_to_follow_path(&path),
-            CommandType::StateManual => SimpleDrive { speed: network_command.throttle, curvature: network_command.turn },
-            CommandType::StateOff => SimpleDrive { speed: 0., curvature: 0. },
+        let command = match CommandMode::try_from(network_command.state).unwrap_or_default() {
+            CommandMode::StateAuto => follower.command_to_follow_path(&path),
+            CommandMode::StateManual => SimpleDrive { speed: network_command.throttle, curvature: network_command.turn },
+            CommandMode::StateOff => SimpleDrive { speed: 0., curvature: 0. },
         };
 
         driver.drive(command);

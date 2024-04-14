@@ -1,9 +1,5 @@
 
 // TcpListener, tokio, socket2
-
-use std::{borrow::Borrow, io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
-use eframe::egui;
-use prost::Message;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -15,46 +11,48 @@ mod messages {
         include!(concat!(env!("OUT_DIR"), "/messages.commands.rs"));
     }
 }
+use std::{io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use eframe::egui;
+use messages::command::CommandMode;
+use prost::Message;
 
-enum CarMode {
-    OFF,
-    AUTO,
-    MANUAL,
-}
 
-impl ToString for CarMode {
+impl ToString for CommandMode {
     fn to_string(&self) -> String {
         match *self {
-            CarMode::OFF => "Disabled",
-            CarMode::AUTO => "Auto",
-            CarMode::MANUAL => "Manual"
+            CommandMode::StateOff => "Disabled",
+            CommandMode::StateAuto => "Auto",
+            CommandMode::StateManual => "Manual"
         }.to_string()
     }
 }
 
-fn state_selector(ui: &mut egui::Ui, current_state: &mut CarMode) {
+
+fn state_selector(ui: &mut egui::Ui, current_state: &mut CommandMode) {
     ui.horizontal(|ui| {
         ui.label(current_state.to_string());
         if ui.button("Stop").clicked() {
-            *current_state = CarMode::OFF;
+            *current_state = CommandMode::StateOff;
         }
         if ui.button("Auto").clicked() {
-            *current_state = CarMode::AUTO;
+            *current_state = CommandMode::StateAuto;
         }
         if ui.button("Manual").clicked() {
-            *current_state = CarMode::MANUAL;
+            *current_state = CommandMode::StateManual;
         }
     });
 }
 
 fn wait_to_connect() -> TcpStream {
     let car_addr = SocketAddr::from(([127, 0, 0, 1], 3141));
+    let mut count = 0;
     loop {
         println!("Trying to connect");
         match TcpStream::connect(car_addr) {
             Ok(connection) => return connection,
-            Err(e) => println!("Connection failed '{}', retying in 1s", e.to_string()),
+            Err(e) => println!("Connection failed {}: '{}', retying in 1s", count, e.to_string()),
         };
+        count += 1;
         thread::sleep(Duration::from_secs(1));
     }
 }
@@ -79,6 +77,7 @@ fn main() -> Result<(), eframe::Error> {
     let state_comms = Arc::clone(&state_main);
 
     let mut connection = wait_to_connect();
+    connection.set_nodelay(true).unwrap();
     
     thread::spawn(move || {
         let mut buf = [0; 4096];
@@ -87,10 +86,12 @@ fn main() -> Result<(), eframe::Error> {
                 let mut local_state = state_comms.lock().unwrap();
                 
                 let message_sent_at = Instant::now();
-                connection.write(&local_state.command_to_send.encode_length_delimited_to_vec()).unwrap();
-                connection.read(&mut buf[..]).unwrap();
+                let to_send = local_state.command_to_send.encode_length_delimited_to_vec();
+                connection.write(&to_send).unwrap();
+                let recieved_bytes = connection.read(&mut buf[..]).unwrap();
                 local_state.last_latency = message_sent_at.elapsed();
-
+                
+                println!("recieved {} bytes, sent {} bytes", recieved_bytes, to_send.len());
                 local_state.last_recieved_diagnostic.merge_length_delimited(&buf[..]).unwrap();
             }
             std::thread::sleep(Duration::from_secs_f64(0.033));
@@ -98,7 +99,7 @@ fn main() -> Result<(), eframe::Error> {
     });
 
     // Our application state:
-    let mut mode = CarMode::OFF;
+    let mut mode = CommandMode::StateOff;
     let mut ip = String::new();
 
     eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
@@ -119,9 +120,9 @@ fn main() -> Result<(), eframe::Error> {
         {
             let mut state = state_main.lock().unwrap();
             state.command_to_send = messages::command::DriveCommand {
-                state: (*(mode.borrow().clone())) as i32,
+                state: mode.clone() as i32,
                 throttle: 0.,
-                turn: 0.,
+                turn: 0.2,
             };
 
         }

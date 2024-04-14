@@ -16,12 +16,12 @@ pub trait Commander {
 
 pub struct NetworkComms {
     last_recieved: Arc<Mutex<messages::command::DriveCommand>>,
-// TODO: accumulate diagnotic until it gets sent
+    // TODO: accumulate diagnotic until it gets sent
     to_send: Arc<Mutex<Box<messages::diagnostic::FullDiagnostic>>>,
 }
 
 const DEFAULT_DRIVE_COMMAND: messages::command::DriveCommand = messages::command::DriveCommand {
-    state: messages::command::CommandType::StateOff as i32,
+    state: messages::command::CommandMode::StateOff as i32,
     throttle: 0.,
     turn: 0.,
 };
@@ -67,14 +67,19 @@ impl NetworkComms {
         thread::spawn(move || {
             let mut buf = [0; 2048];
             loop {
-                stream.read(&mut buf).unwrap();
+                let bytes_read = stream.read(&mut buf).unwrap();
                 let mut recieved = recieved_mutex.lock().unwrap();
                 recieved.merge_length_delimited(&buf[..]).unwrap();
-
+                println!("recived {:?}", recieved);
                 let to_send = to_send_mutex.lock().unwrap();
-                stream
-                    .write(&(to_send.encode_length_delimited_to_vec()))
-                    .unwrap();
+                let to_send_buf = to_send.encode_length_delimited_to_vec();
+                let sent = stream.write(&to_send_buf);
+                if let Err(err) = sent {
+                    println!("Could not sent to client: '{}', closing this recieving thread", err);
+                    break;
+                }
+
+                println!("Recieved {} bytes, sending {} bytes", bytes_read, to_send_buf.len());
             }
         });
     }
@@ -83,9 +88,7 @@ impl NetworkComms {
 impl Logger for NetworkComms {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         let mut to_send = self.to_send.lock().unwrap();
-        to_send
-            .merge_length_delimited(&message.encode_length_delimited_to_vec()[..])
-            .unwrap();
+        *to_send = Box::new(message.clone());
     }
 }
 

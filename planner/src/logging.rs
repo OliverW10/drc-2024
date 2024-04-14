@@ -82,7 +82,7 @@ impl Logger for FileLogger {
         let message = message.encode_length_delimited_to_vec();
         match self.file.write(&message) {
             Err(e) => println!("error writing log file {}", e),
-            Ok(n) => println!("had {} bytes, wrote {} bytes", message.len(), n),
+            Ok(n) => {},
         };
     }
 }
