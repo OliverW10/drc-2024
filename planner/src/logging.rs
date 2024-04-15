@@ -80,9 +80,21 @@ pub fn get_new_log_file_name() -> String {
 impl Logger for FileLogger {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         let message = message.encode_length_delimited_to_vec();
-        match self.file.write(&message) {
-            Err(e) => println!("error writing log file {}", e),
-            Ok(n) => {}
-        };
+        let result = self.file.write(&message);
+        if let Err(e) = result {
+            println!("error writing log file {}", e);
+        }
+    }
+}
+
+pub struct AggregateLogger<'a> {
+    pub loggers: Vec<&'a mut dyn Logger>
+}
+
+impl<'a> Logger for AggregateLogger<'a> {
+    fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
+        for logger in &mut self.loggers {
+            (*logger).send_core(message);
+        }
     }
 }

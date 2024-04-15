@@ -22,9 +22,11 @@ mod messages {
     }
 }
 
+use std::{collections::VecDeque, ops::Div, time::Instant};
 use comms::Commander;
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
+use logging::AggregateLogger;
 use messages::{command::CommandMode, path::SimpleDrive};
 use opencv::Result;
 use planner::Planner;
@@ -56,6 +58,10 @@ fn main() -> Result<()> {
     let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;
     current_state.pos = Pos { x: 0.1, y: 0.3 };
+
+    let mut last_frame = Instant::now();
+    let mut frame_times = VecDeque::new();
+    frame_times.push_back(0 as f32);
 
     let _ = setup_profiler();
 
@@ -93,19 +99,26 @@ fn main() -> Result<()> {
 
         driver.drive(command);
 
-        // TODO
-        file_logger.send(
+        let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;
+        let frametime_max = frame_times.clone().into_iter().reduce(f32::max).unwrap();
+        let diagnostic = Diagnostic {
+            actual_speed: current_state.speed as f32,
+            actual_turn: current_state.curvature as f32,
+            framerate_avg: if frametime_avg != 0.0 { 1.0 / frametime_avg } else { 0.0 },
+            framerate_90: if frametime_max != 0.0 {1.0 / frametime_max } else {0.0},
+        };
+        AggregateLogger { loggers: vec![&mut network_comms, &mut file_logger]}.send(
             &path,
             &new_points,
             &point_map.get_last_removed_ids(),
-            &Diagnostic::default(),
+            &diagnostic,
         );
-        network_comms.send(
-            &path,
-            &new_points,
-            &point_map.get_last_removed_ids(),
-            &Diagnostic::default(),
-        );
+
+        frame_times.push_front(last_frame.elapsed().as_secs_f32());
+        if frame_times.len() > 10 {
+            frame_times.pop_back();
+        }
+        last_frame = Instant::now();
     }
 }
 

@@ -12,13 +12,12 @@ mod messages {
         include!(concat!(env!("OUT_DIR"), "/messages.commands.rs"));
     }
 }
-use comms::{wait_to_connect, CommsState, CONNECTED_TIMEOUT};
+use comms::{start_request_loop, CommsState, CONNECTED_TIMEOUT};
 use components::{change_command_from_keys, driver_display, map, state_selector};
 use eframe::egui::{self, RichText};
 use messages::command::CommandMode;
-use prost::Message;
 use std::{
-    io::{Read, Write}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}
+    sync::{Arc, Mutex}, time::{Duration, Instant}
 };
 
 impl ToString for CommandMode {
@@ -44,37 +43,9 @@ fn main() -> Result<(), eframe::Error> {
         last_latency: Duration::from_secs(u64::MAX),
         ..Default::default()
     }));
-    let state_comms = Arc::clone(&state_main);
 
-    thread::spawn(move || {
-        let mut connection = wait_to_connect();
-        connection.set_nodelay(true).unwrap();
-
-        let mut buf = [0; 4096];
-        loop {
-            {
-                let mut local_state = state_comms.lock().unwrap();
-
-                let message_sent_at = Instant::now();
-                let to_send = local_state.command_to_send.encode_length_delimited_to_vec();
-                connection.write(&to_send).unwrap();
-                let recieved_bytes = connection.read(&mut buf[..]).unwrap();
-                local_state.last_latency = message_sent_at.elapsed();
-                local_state.last_message_at = Instant::now();
-
-                println!(
-                    "recieved {} bytes, sent {} bytes",
-                    recieved_bytes,
-                    to_send.len()
-                );
-                local_state
-                    .last_recieved_diagnostic
-                    .merge_length_delimited(&buf[..])
-                    .unwrap();
-            }
-            std::thread::sleep(Duration::from_secs_f64(0.033));
-        }
-    });
+    start_request_loop(Arc::clone(&state_main));
+    
 
     let mut mode = CommandMode::StateOff;
     let mut ip = String::new();
@@ -100,13 +71,22 @@ fn main() -> Result<(), eframe::Error> {
                 let mut state = state_main.lock().unwrap();
                 state.command_to_send.state = mode as i32;
                 change_command_from_keys(ui, delta_time, &mut state.command_to_send);
-                driver_display(ui, &state.command_to_send);
+                driver_display(ui, &state.command_to_send, &state.last_recieved_diagnostic.diagnostic.clone().unwrap_or_default());
                 map(ui, &state.last_recieved_diagnostic);
 
                 is_connected = state.last_message_at.elapsed() < CONNECTED_TIMEOUT;
 
                 let latency_ms = state.last_latency.as_secs_f64() * 1000.;
                 ui.label(format!("Latency: {latency_ms}ms"));
+                if let Some(diag) = state.last_recieved_diagnostic.diagnostic.clone() {
+                    let fps_avg = diag.framerate_avg;
+                    let fps_low = diag.framerate_90;
+                    ui.label(format!("Fps avg: {:.2}", fps_avg));
+                    ui.label(format!("Fps low: {:.2}", fps_low));
+                } else {
+                    ui.label(format!("No diagnostic recieved"));
+                    ui.label(format!("-"));
+                }
             }
         });
         ctx.request_repaint();

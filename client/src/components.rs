@@ -5,18 +5,18 @@ use eframe::egui::{self, Key, Pos2, Rect, Stroke, Vec2};
 use crate::{colours, messages::{self, command::CommandMode, diagnostic::FullDiagnostic}};
 
 
-pub fn state_selector(ui: &mut egui::Ui, current_state: &mut CommandMode) {
+pub fn state_selector(ui: &mut egui::Ui, current_mode: &mut CommandMode) {
     // TODO: radio buttons?
     ui.horizontal(|ui| {
-        ui.label(current_state.to_string());
+        ui.label(current_mode.to_string());
         if ui.button("Stop").clicked() {
-            *current_state = CommandMode::StateOff;
+            *current_mode = CommandMode::StateOff;
         }
         if ui.button("Auto").clicked() {
-            *current_state = CommandMode::StateAuto;
+            *current_mode = CommandMode::StateAuto;
         }
         if ui.button("Manual").clicked() {
-            *current_state = CommandMode::StateManual;
+            *current_mode = CommandMode::StateManual;
         }
     });
 }
@@ -51,7 +51,7 @@ const MAX_TURN: f32 = 3.;
 const ACCEL: f32 = 1.;
 const TURN_RATE: f32 = 10.;
 
-const SPEED_DECAY: f32 = 2.;
+const SPEED_DECAY: f32 = 1.;
 const TURN_DECAY: f32 = 3.;
 
 fn change_input(dt: Duration, last: f32, is_positive: bool, is_negative: bool, change_from_input: f32, max_output: f32, decay_rate: f32) -> f32 {
@@ -80,20 +80,35 @@ pub fn change_command_from_keys(ui: &mut egui::Ui, dt: Duration, command: &mut m
 pub fn driver_display(
     ui: &mut egui::Ui,
     last_command: &messages::command::DriveCommand,
+    actual_driven: &messages::diagnostic::Diagnostic,
 ) -> messages::command::DriveCommand {
 
     let paint = ui.painter().with_clip_rect(DRIVER_RECT);
 
     
+    paint.rect_filled(DRIVER_RECT, 0., colours::SHADE);
+
+
+    let actual_pos = Pos2 {
+        x: actual_driven.actual_turn / MAX_TURN,
+        y: -actual_driven.actual_speed / MAX_SPEED,
+    };
+    paint.circle(
+        in_rect(actual_pos, DRIVER_RECT),
+        10.,
+        colours::DRIVE_ACTUAL_BALL,
+        Stroke::NONE,
+    );
+
+
     let indicator_pos = Pos2 {
         x: last_command.turn / MAX_TURN,
         y: -last_command.throttle / MAX_SPEED,
     };
-    paint.rect_filled(DRIVER_RECT, 0., colours::SHADE);
     paint.circle(
         in_rect(indicator_pos, DRIVER_RECT),
         10.,
-        colours::DRIVE_BALL,
+        colours::DRIVE_COMMAND_BALL,
         Stroke::NONE,
     );
 
