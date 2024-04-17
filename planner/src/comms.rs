@@ -16,8 +16,7 @@ pub trait Commander {
 
 pub struct NetworkComms {
     last_recieved: Arc<Mutex<messages::command::DriveCommand>>,
-    // TODO: accumulate diagnotic until it gets sent
-    to_send: Arc<Mutex<Box<messages::diagnostic::FullDiagnostic>>>,
+    to_send: Arc<Mutex<messages::diagnostic::FullDiagnostic>>,
 }
 
 const DEFAULT_DRIVE_COMMAND: messages::command::DriveCommand = messages::command::DriveCommand {
@@ -29,9 +28,9 @@ const DEFAULT_DRIVE_COMMAND: messages::command::DriveCommand = messages::command
 impl NetworkComms {
     pub fn new() -> NetworkComms {
         let last_recieved = Arc::new(Mutex::new(DEFAULT_DRIVE_COMMAND.clone()));
-        let to_send = Arc::new(Mutex::new(Box::new(
+        let to_send = Arc::new(Mutex::new(
             messages::diagnostic::FullDiagnostic::default(),
-        )));
+        ));
         let new_self = NetworkComms {
             last_recieved: last_recieved,
             to_send: to_send,
@@ -61,7 +60,7 @@ impl NetworkComms {
     pub fn start_recv_loop(
         mut stream: TcpStream,
         recieved_mutex: Arc<Mutex<messages::command::DriveCommand>>,
-        to_send_mutex: Arc<Mutex<Box<messages::diagnostic::FullDiagnostic>>>,
+        to_send_mutex: Arc<Mutex<messages::diagnostic::FullDiagnostic>>,
     ) {
         // Spawn a thread for each connection to recieve messages
         thread::spawn(move || {
@@ -71,7 +70,7 @@ impl NetworkComms {
                 let mut recieved = recieved_mutex.lock().unwrap();
                 recieved.merge_length_delimited(&buf[..]).unwrap();
                 println!("recived {:?}", recieved);
-                let to_send = to_send_mutex.lock().unwrap();
+                let mut to_send = to_send_mutex.lock().unwrap();
                 let to_send_buf = to_send.encode_length_delimited_to_vec();
                 let sent = stream.write(&to_send_buf);
                 if let Err(err) = sent {
@@ -81,6 +80,8 @@ impl NetworkComms {
                     );
                     break;
                 }
+
+                reset_diagnostic(&mut to_send);
 
                 println!(
                     "Recieved {} bytes, sending {} bytes",
@@ -95,8 +96,28 @@ impl NetworkComms {
 impl Logger for NetworkComms {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         let mut to_send = self.to_send.lock().unwrap();
-        *to_send = Box::new(message.clone());
+        accumulate_diagnostic(&mut to_send, message);
     }
+}
+
+fn accumulate_diagnostic(target: &mut messages::diagnostic::FullDiagnostic, new: &messages::diagnostic::FullDiagnostic) {
+    // Replace the diagnostic and path with most recent
+    target.diagnostic = new.diagnostic.clone();
+    target.path = new.path.clone();
+    // Accumulate map updates
+    target.map_update = match (&mut target.map_update, &new.map_update) {
+        (None, _) => new.map_update.clone(), 
+        (Some(old_map), Some(new_map))  => {
+            old_map.points_added.append(&mut new_map.points_added.clone());
+            old_map.removed_ids.append(&mut new_map.removed_ids.clone());
+            target.map_update.clone() // TODO: avoid clone
+        },
+        (Some(_), None) => target.map_update.clone(),
+    };
+}
+
+fn reset_diagnostic(target: &mut messages::diagnostic::FullDiagnostic) {
+    target.map_update = None;
 }
 
 impl Commander for NetworkComms {

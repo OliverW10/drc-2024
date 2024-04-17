@@ -22,7 +22,7 @@ mod messages {
     }
 }
 
-use std::{collections::VecDeque, ops::Div, time::Instant};
+use std::{collections::VecDeque, time::Instant};
 use comms::Commander;
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
@@ -74,12 +74,12 @@ fn main() -> Result<()> {
         };
 
         current_state += driver.get_state_provider().get_movement();
-        // TODO: split things that i want to call multiple times into multiple objects?
+
         let network_command = network_comms.get_latest_message().unwrap_or_default();
 
-        let mut new_points = vision.get_points_from_image(&frame, current_state);
+        let new_points = vision.get_points_from_image(&frame, current_state);
 
-        point_map.add_points(&mut new_points);
+        point_map.add_points(&new_points);
 
         point_map.remove(&pruner::old_points_predicate());
 
@@ -99,19 +99,12 @@ fn main() -> Result<()> {
 
         driver.drive(command);
 
-        let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;
-        let frametime_max = frame_times.clone().into_iter().reduce(f32::max).unwrap();
-        let diagnostic = Diagnostic {
-            actual_speed: current_state.speed as f32,
-            actual_turn: current_state.curvature as f32,
-            framerate_avg: if frametime_avg != 0.0 { 1.0 / frametime_avg } else { 0.0 },
-            framerate_90: if frametime_max != 0.0 {1.0 / frametime_max } else {0.0},
-        };
+    
         AggregateLogger { loggers: vec![&mut network_comms, &mut file_logger]}.send(
             &path,
             &new_points,
             &point_map.get_last_removed_ids(),
-            &diagnostic,
+            &get_diagnostic(&frame_times, current_state),
         );
 
         frame_times.push_front(last_frame.elapsed().as_secs_f32());
@@ -129,4 +122,15 @@ fn setup_profiler() -> puffin_http::Server {
     println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
     puffin::set_scopes_on(true);
     _puffin_server
+}
+
+fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
+    let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;
+    let frametime_max = frame_times.clone().into_iter().reduce(f32::max).unwrap();
+    Diagnostic {
+        actual_speed: state.speed as f32,
+        actual_turn: state.curvature as f32,
+        framerate_avg: if frametime_avg != 0.0 { 1.0 / frametime_avg } else { 0.0 },
+        framerate_90: if frametime_max != 0.0 {1.0 / frametime_max } else {0.0},
+    }
 }

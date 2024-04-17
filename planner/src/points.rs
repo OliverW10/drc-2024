@@ -76,6 +76,7 @@ impl Display for PointType {
     }
 }
 
+#[derive(Clone)]
 pub struct Point {
     pub pos: Pos,
     pub expire_at: f64,
@@ -85,7 +86,7 @@ pub struct Point {
 
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
-    fn add_points(&mut self, points: &mut Vec<Point>);
+    fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
     fn get_last_removed_ids(&mut self) -> Vec<u32>;
 }
@@ -119,9 +120,9 @@ impl PointMap for SimplePointMap {
         ret
     }
 
-    fn add_points(&mut self, points: &mut Vec<Point>) {
+    fn add_points(&mut self, points: &Vec<Point>) {
         puffin::profile_function!();
-        self.all_points.append(points);
+        self.all_points.append(&mut points.clone());
     }
 
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {

@@ -1,8 +1,8 @@
-use std::time::Duration;
+use std::{iter::zip, time::Duration};
 
-use eframe::egui::{self, Key, Pos2, Rect, Stroke, Vec2};
+use eframe::egui::{self, Color32, Key, Pos2, Rect, Stroke, Vec2};
 
-use crate::{colours, messages::{self, command::CommandMode, diagnostic::FullDiagnostic}};
+use crate::{colours::{self, point_colour}, messages::{self, command::CommandMode, path::PointType}};
 
 
 pub fn state_selector(ui: &mut egui::Ui, current_mode: &mut CommandMode) {
@@ -28,7 +28,7 @@ const DRIVER_RECT: Rect = Rect {
 
 const MAP_RECT: Rect = Rect {
     min: Pos2 { x: 5., y: 200. },
-    max: Pos2 { x: 505., y: 700. },
+    max: Pos2 { x: 405., y: 600. },
 };
 
 // takes a pos thats -1 to 1 and puts it ceneterd in the rect
@@ -40,9 +40,25 @@ fn in_rect(p: Pos2, r: Rect) -> Pos2 {
     };
     r.lerp_inside(vec)
 }
-pub fn map(ui: &mut egui::Ui, map: &FullDiagnostic) {
+
+pub fn map_display(ui: &mut egui::Ui, map: &Vec<messages::path::MapPoint>, path: &messages::path::Path) {
+    let map_center = Pos2 { x: 0., y: 0. };
+    let map_scale = 1./4.; // 4x4 meter map
     let paint = ui.painter().with_clip_rect(MAP_RECT);
-    paint.rect_filled(DRIVER_RECT, 0., colours::SHADE);
+    paint.rect_filled(MAP_RECT, 0., colours::SHADE);
+
+    for point in map {
+        let pos = Pos2 { x: point.x, y: point.y };
+        let point_type = PointType::try_from(point.point_type).unwrap();
+        paint.circle(in_rect(pos*map_scale, MAP_RECT), 2., point_colour(&point_type), Stroke::NONE);
+    }
+    if path.points.len() > 0 {
+        for (prev, next) in zip(&path.points[..], &path.points[1..]) {
+            let a = in_rect(Pos2 {x: prev.x, y: prev.y} * map_scale, MAP_RECT);
+            let b = in_rect(Pos2 {x: next.x, y: next.y } * map_scale, MAP_RECT);
+            paint.line_segment([a, b], Stroke::new(1., Color32::WHITE));
+        }
+    }
 }
 
 const MAX_SPEED: f32 = 0.5;
@@ -81,13 +97,11 @@ pub fn driver_display(
     ui: &mut egui::Ui,
     last_command: &messages::command::DriveCommand,
     actual_driven: &messages::diagnostic::Diagnostic,
-) -> messages::command::DriveCommand {
+) {
 
     let paint = ui.painter().with_clip_rect(DRIVER_RECT);
-
     
     paint.rect_filled(DRIVER_RECT, 0., colours::SHADE);
-
 
     let actual_pos = Pos2 {
         x: actual_driven.actual_turn / MAX_TURN,
@@ -100,7 +114,6 @@ pub fn driver_display(
         Stroke::NONE,
     );
 
-
     let indicator_pos = Pos2 {
         x: last_command.turn / MAX_TURN,
         y: -last_command.throttle / MAX_SPEED,
@@ -111,10 +124,4 @@ pub fn driver_display(
         colours::DRIVE_COMMAND_BALL,
         Stroke::NONE,
     );
-
-    messages::command::DriveCommand {
-        state: last_command.state,
-        throttle: 0.,
-        turn: 0.2,
-    }
 }
