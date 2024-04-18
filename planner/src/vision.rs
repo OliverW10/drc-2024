@@ -2,6 +2,7 @@ mod arrow;
 mod lines;
 mod obstacle;
 mod perspective;
+mod mock;
 
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
@@ -12,13 +13,12 @@ use crate::{
     config::colours,
     points::{Point, PointType},
     state::CarState,
-    vision::perspective::relative_to_global_point,
 };
 
-use self::{arrow::ArrowFinder, lines::LineFinder};
+use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
 
 pub trait ObjectFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat) -> Result<Vec<Point>, opencv::Error>;
+    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error>;
 }
 
 pub struct Vision {
@@ -43,6 +43,8 @@ impl Vision {
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));
 
+        point_finders.push(Box::new(FakePointProvider {}));
+
         return Vision {
             point_finders: point_finders,
             cropped: Mat::default(),
@@ -51,6 +53,7 @@ impl Vision {
         };
     }
 
+    // Runs all the vision modules that give their output in map points
     pub fn get_points_from_image(
         &mut self,
         image: &opencv::core::Mat,
@@ -100,8 +103,7 @@ impl Vision {
         let points: Vec<Point> = self
             .point_finders
             .iter_mut()
-            .flat_map(|finder| finder.get_points(&self.hsv).unwrap())
-            .map(|p| relative_to_global_point(p, state))
+            .flat_map(|finder| finder.get_points(&self.hsv, &state).unwrap())
             .collect();
         points
     }

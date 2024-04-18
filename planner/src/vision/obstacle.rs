@@ -1,4 +1,4 @@
-use crate::{points::Point, vision::ObjectFinder};
+use crate::{points::Point, state::CarState, vision::ObjectFinder};
 use opencv::core::Mat;
 
 // Finds points along just the bottom edge of something
@@ -9,7 +9,7 @@ struct ObstacleFinder {
 impl ObstacleFinder {}
 
 impl ObjectFinder for ObstacleFinder {
-    fn get_points(&mut self, _image: &Mat) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, _image: &Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error> {
         Ok(vec![])
     }
 }

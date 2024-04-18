@@ -61,8 +61,7 @@ pub fn perspective_correct(points_ints_in_vec: &Vec<opencv::core::Point2i>) -> V
     result_final
 }
 
-// Converts a point relative to the car to relative to the world
-pub fn relative_to_global_point(point: Point, car: CarState) -> Point {
+pub fn convert_point_relative_to_global(point: Point, car: &CarState) -> Point {
     Point {
         pos: point.pos.rotate(car.angle) + car.pos,
         ..point

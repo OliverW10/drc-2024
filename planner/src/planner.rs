@@ -66,7 +66,7 @@ mod distance_calculators {
     }
 }
 
-// calculates the distance/traversability map used for pathfinding
+// Calculates the distance/traversability weights used for pathfinding
 fn distance(state: CarState, nearby_points: &Vec<&Point>) -> f64 {
     puffin::profile_function!();
     let mut total_weight = -PLAN_STEP_SIZE_METERS;
@@ -166,7 +166,6 @@ impl Planner {
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
-        // https://doc.rust-lang.org/std/collections/binary_heap/index.html
         let mut open_set = BinaryHeap::new();
         open_set.push(PathNodeData {
             state: start_state,

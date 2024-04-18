@@ -1,6 +1,6 @@
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
 use serial2::{self, SerialPort};
-use std::{fs::File, time::Instant};
+use std::time::Instant;
 
 pub struct CarCommander {
     driver: Box<dyn Driver>,

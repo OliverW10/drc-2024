@@ -65,16 +65,15 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>){
                 local_state.last_latency = message_sent_at.elapsed();
                 local_state.last_message_at = Instant::now();
                 
-                // println!(
-                //     "recieved {} bytes, sent {} bytes",
-                //     recieved_bytes,
-                //     to_send.len()
-                // );
                 local_state.last_recieved_diagnostic.clear();
-                local_state
+                let result = local_state
                     .last_recieved_diagnostic
-                    .merge_length_delimited(&buf[..])
-                    .unwrap();
+                    .merge_length_delimited(&buf[..]);
+                
+                if result.is_err() {
+                    println!("Could not decode messages {} bytes", recieved_bytes);
+                    continue;
+                }
 
                 let map_update = local_state.last_recieved_diagnostic.map_update.clone().unwrap_or_default();
                 update_map(&mut local_state.map, &map_update);

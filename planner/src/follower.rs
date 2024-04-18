@@ -10,7 +10,7 @@ use crate::{
 
 // In the future I can also make the speed dependent on the curvature at some, further, distance ahead.
 
-fn get_target_on_path(path: &Path) -> Option<Pos> {
+fn get_dist_forward_on_path(path: &Path, dist: f64) -> Option<Pos> {
     if path.points.len() <= 2 {
         return None;
     }
@@ -24,7 +24,7 @@ fn get_target_on_path(path: &Path) -> Option<Pos> {
         let prev = &path.points[point_idx];
         let next = &path.points[point_idx + 1];
         let cur_dist = prev.pos.dist(next.pos);
-        if dist + cur_dist > LOOKAHEAD_DIST {
+        if dist + cur_dist > dist {
             target_idx = point_idx;
             break;
         }
@@ -32,7 +32,7 @@ fn get_target_on_path(path: &Path) -> Option<Pos> {
     }
     let before = &path.points[target_idx];
     let after = &path.points[target_idx + 1];
-    let needed_dist = LOOKAHEAD_DIST - dist;
+    let needed_dist = dist - dist;
     let target = before.pos.dist_along(after.pos, needed_dist);
     Some(target)
 }
@@ -59,7 +59,7 @@ impl Follower {
     pub fn command_to_follow_path(&self, path: &Path) -> SimpleDrive {
         puffin::profile_function!();
 
-        let target_pos = get_target_on_path(path);
+        let target_pos = get_dist_forward_on_path(path, LOOKAHEAD_DIST);
         let current_pos = path
             .points
             .first()

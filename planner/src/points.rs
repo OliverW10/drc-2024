@@ -3,7 +3,7 @@ use std::{
     ops,
 };
 
-#[derive(Copy, Clone, PartialEq, Default, Debug)] // needed for copy on DriveState, TODO: do i need Copy on DriveState
+#[derive(Copy, Clone, PartialEq, Default, Debug)]
 pub struct Pos {
     pub x: f64,
     pub y: f64,

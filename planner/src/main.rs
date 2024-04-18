@@ -43,6 +43,7 @@ use crate::{
 };
 
 fn main() -> Result<()> {
+    // Create objects
     let mut camera = Camera::new();
     let point_map = &mut SimplePointMap::new() as &mut dyn PointMap;
     let mut vision = Vision::new();
@@ -55,6 +56,7 @@ fn main() -> Result<()> {
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
 
+    // Initialise state
     let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;
     current_state.pos = Pos { x: 0.1, y: 0.3 };
@@ -75,7 +77,7 @@ fn main() -> Result<()> {
 
         current_state += driver.get_state_provider().get_movement();
 
-        let network_command = network_comms.get_latest_message().unwrap_or_default();
+        let network_command = network_comms.get_latest_message();
 
         let new_points = vision.get_points_from_image(&frame, current_state);
 
