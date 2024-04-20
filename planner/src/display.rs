@@ -27,7 +27,7 @@ fn map_to_img(pos: &Pos) -> opencv::core::Point {
 
 const DISPLAY_MAP: bool = true;
 
-pub fn draw_map_debug(point_map: &Vec<&Point>, path: &Path) {
+pub fn draw_map_debug(point_map: &Vec<Point>, path: &Path) {
     puffin::profile_function!();
 
     if !DISPLAY_MAP {

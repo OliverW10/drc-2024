@@ -47,7 +47,7 @@ mod distance_calculators {
 }
 
 // Calculates the distance/traversability weights used for pathfinding
-fn distance(state: CarState, nearby_points: &Vec<&Point>) -> f64 {
+fn distance(state: CarState, nearby_points: &Vec<Point>) -> f64 {
     puffin::profile_function!();
     let mut total_weight = -PLAN_STEP_SIZE_METERS * 1.0;
 

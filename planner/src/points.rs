@@ -1,6 +1,5 @@
 use std::{
-    fmt::{self, Display},
-    ops,
+    collections::HashMap, fmt::{self, Display}, ops
 };
 
 #[derive(Copy, Clone, PartialEq, Default, Debug)]
@@ -76,19 +75,21 @@ impl Display for PointType {
     }
 }
 
+type PointID = u32;
+
 #[derive(Clone)]
 pub struct Point {
     pub pos: Pos,
     pub expire_at: f64,
     pub point_type: PointType,
-    pub id: u32,
+    pub id: PointID,
 }
 
 pub trait PointMap {
-    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point>;
+    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point>;
     fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
-    fn get_last_removed_ids(&mut self) -> Vec<u32>;
+    fn get_last_removed_ids(&mut self) -> Vec<PointID>;
 }
 
 pub struct SimplePointMap {
@@ -106,16 +107,14 @@ impl SimplePointMap {
 }
 
 impl PointMap for SimplePointMap {
-    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<&Point> {
+    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
-        let ret: Vec<&Point> = self
+        let ret: Vec<Point> = self
             .all_points
             .iter()
-            .filter(|point| {
-                let result = point.pos.dist(around) < max_dist;
-                result
-            })
+            .filter(|point| point.pos.dist(around) < max_dist)
+            .map(|p| p.clone())
             .collect();
         ret
     }
@@ -143,22 +142,99 @@ impl PointMap for SimplePointMap {
     }
 }
 
-// const GRID_SIZE: f64 = 0.2;
+const GRID_SIZE: f64 = 0.2;
 
-// struct GridIndex {
-//     x: i16,
-//     y: i16,
-// }
+#[derive(PartialEq, Eq, Hash)]
+struct GridIndex {
+    x: i16,
+    y: i16,
+}
 
-// TODO:
-// - cache exact point retrevals
-// - cache previous point retreval in hash set and only consider xor grid squares for the previous and current retreval
-// pub struct GridPointMap {
-//     grid: HashMap<GridIndex, Vec<Point>>,
-// }
+impl GridIndex {
+    fn from_pos(pos: Pos) -> GridIndex {
+        GridIndex {
+            x: (pos.x / GRID_SIZE).floor() as i16,
+            y: (pos.y / GRID_SIZE).floor() as i16,
+        }
+    }
+}
 
-// impl PointMap for GridPointMap {
-//     fn get_points(&self, around: Pos, max_dist: f64) -> Vec<Point>{
+pub struct GridPointMap {
+    grid: HashMap<GridIndex, Vec<Point>>,
+    arrow_points: Vec<Point>,
+    removed_ids: Vec<PointID>
+}
 
-//     }
-// }
+impl GridPointMap {
+    fn new() -> GridPointMap {
+        GridPointMap {
+            grid: HashMap::new(),
+            arrow_points: Vec::new(),
+            removed_ids: Vec::new(),
+        }
+    }
+}
+
+impl PointMap for GridPointMap {
+
+    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
+        let mut result = Vec::new();
+        result.append(&mut self.arrow_points.clone());
+
+        let top_left = GridIndex::from_pos(around + Pos {x: -max_dist, y: -max_dist});
+        let bottom_right = GridIndex::from_pos(around + Pos {x: max_dist, y: max_dist});
+
+        for x in top_left.x..bottom_right.x+1 {
+            for y in top_left.y..bottom_right.y+1 {
+                let key = GridIndex { x, y };
+                if let Some(points) = self.grid.get(&key){
+                    result.append(
+                        &mut points.iter()
+                        .filter(|point| point.pos.dist(around) < max_dist)
+                        .map(|p| p.clone())
+                        .collect()
+                    );
+                }
+            }
+        }
+        result
+    }
+
+    fn add_points(&mut self, points: &Vec<Point>) {
+        for point in points.clone().into_iter() {
+            match point.point_type {
+                PointType::ArrowLeft | PointType::ArrowRight => {
+                    self.arrow_points.push(point);
+                }
+                _ => {
+                    let key = GridIndex::from_pos(point.pos);
+                    self.grid.entry(key).or_default().push(point);
+                }
+            }
+        }
+    }
+
+    fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
+        filter_with_removed(&mut self.arrow_points, predicate, &mut self.removed_ids);
+
+        for points in self.grid.values_mut() {
+            filter_with_removed(points, predicate, &mut self.removed_ids);
+        }
+    }
+
+    fn get_last_removed_ids(&mut self) -> Vec<u32> {
+        self.removed_ids.drain(..).collect()
+    }
+}
+
+// Filters points and records the ids of the removed ones
+fn filter_with_removed(points: &mut Vec<Point>, predicate: &dyn Fn(&Point) -> bool, removed: &mut Vec<PointID>) {
+    points.retain(|item| {
+        if predicate(item) {
+            true
+        } else {
+            removed.push(item.id);
+            false
+        }
+    });
+}
