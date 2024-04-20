@@ -47,7 +47,7 @@ fn get_curvature_to_target(current: Pos, maybe_target: Option<Pos>) -> f64 {
     }
 }
 
-const LOOKAHEAD_DIST: f64 = 0.3;
+const LOOKAHEAD_DIST: f64 = 0.5;
 
 pub struct Follower {}
 
@@ -59,20 +59,15 @@ impl Follower {
     pub fn command_to_follow_path(&self, path: &Path) -> SimpleDrive {
         puffin::profile_function!();
 
-        let target_pos = get_dist_forward_on_path(path, LOOKAHEAD_DIST);
-        let current_pos = path
-            .points
-            .first()
-            .unwrap_or(&PathPoint {
-                pos: Pos { x: 0., y: 0. },
-                angle: 0.,
-                curvature: 0.,
-            })
-            .pos;
+        let lookahead = 3;
+        let mut curvature = 0.0;
+        for point in &path.points[..lookahead] {
+            curvature += point.curvature;
+        }
+        curvature /= lookahead as f64;
 
-        // command_to_follow_path
         let result = SimpleDrive {
-            curvature: get_curvature_to_target(current_pos, target_pos) as f32,
+            curvature: curvature as f32,
             speed: 1.0,
         };
         result

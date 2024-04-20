@@ -65,7 +65,11 @@ fn main() -> Result<()> {
     let mut frame_times = VecDeque::new();
     frame_times.push_back(0 as f32);
 
-    let _ = setup_profiler();
+    // let _ = setup_profiler();
+    let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
+    let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
+    println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
+    puffin::set_scopes_on(true);
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
@@ -117,14 +121,10 @@ fn main() -> Result<()> {
     }
 }
 
-fn setup_profiler() -> puffin_http::Server {
-    // https://github.com/EmbarkStudios/puffin/tree/main/puffin
-    let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
-    let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
-    println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
-    puffin::set_scopes_on(true);
-    _puffin_server
-}
+// fn setup_profiler() -> puffin_http::Server {
+//     // https://github.com/EmbarkStudios/puffin/tree/main/puffin
+    
+// }
 
 fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
     let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;

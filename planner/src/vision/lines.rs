@@ -36,7 +36,7 @@ impl LineFinder {
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
-        border_points.len() > 150
+        border_points.len() > 100
     }
 
     fn points_from_contours(&self) -> Vec<opencv::core::Point> {

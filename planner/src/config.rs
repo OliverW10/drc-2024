@@ -21,8 +21,8 @@ pub mod colours {
 }
 
 pub mod plan {
-    pub const PLAN_STEP_SIZE_METERS: f64 = 0.1;
-    pub const PLAN_LENGTH_METERS: f64 = 2.0;
+    pub const PLAN_STEP_SIZE_METERS: f64 = 0.2;
+    pub const PLAN_LENGTH_METERS: f64 = 4.0;
     pub const PLAN_STEPS: u32 = (PLAN_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
 
     pub const MAX_CURVATURE: f64 = 1.0 / 0.3;

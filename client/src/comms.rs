@@ -52,7 +52,7 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>){
         let mut connection = wait_to_connect();
         connection.set_nodelay(true).unwrap();
 
-        let mut buf = [0; 4096];
+        let mut buf = [0; 100000];
         loop {
             {
                 let mut local_state = state.lock().unwrap();

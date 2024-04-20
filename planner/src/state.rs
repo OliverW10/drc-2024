@@ -12,6 +12,8 @@ pub struct CarState {
 
 impl CarState {
     pub fn step_distance(&self, dist: f64) -> CarState {
+        puffin::profile_function!();
+
         return CarState {
             pos: self.pos + get_along_arc(dist, self.curvature).rotate(self.angle),
             angle: self.angle + self.curvature * dist,
