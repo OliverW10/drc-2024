@@ -1,4 +1,5 @@
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
+use rppal::gpio::{Gpio, OutputPin};
 use serial2::{self, SerialPort};
 use std::time::{Duration, Instant};
 
@@ -39,17 +40,40 @@ pub trait Steerer {
     fn drive_steer(&mut self, curvature: RadiansPerMeter);
 }
 
-pub struct PwmDriver {}
+pub struct PwmDriver {
+    pin: Option<OutputPin>,
+}
 
+const ALLOW_NO_GPIO: bool = true;
 impl PwmDriver {
     pub fn new() -> PwmDriver {
-        PwmDriver {}
+        // according to rppal docs, software pwm can have jitter of as low as 2us, which is good enough for this
+        // the hardware pwm stuff looks annoying, so I'm going with software for now
+        // https://docs.rs/rppal/latest/rppal/gpio/index.html
+        let pin = Gpio::new().map(|g| g.get(17).unwrap().into_output());
+        PwmDriver {
+            pin: if ALLOW_NO_GPIO {
+                pin.ok()
+            } else {
+                Some(pin.unwrap())
+            },
+        }
     }
 }
 
+const PWM_PERIOD: Duration = Duration::from_millis(20);
+const PWM_MAX: f32 = 2000.0;
+const PWM_MIN: f32 = 1000.0;
+
+const MAX_CURVATURE: f32 = 4.0;
 impl Steerer for PwmDriver {
-    fn drive_steer(&mut self, _curvature: RadiansPerMeter) {
-        // TODO
+    fn drive_steer(&mut self, curvature: RadiansPerMeter) {
+        let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
+        let pulse_width_us = PWM_MIN + t * (PWM_MAX - PWM_MIN);
+        if let Some(pin) = &mut self.pin {
+            pin.set_pwm(PWM_PERIOD, Duration::from_micros(pulse_width_us as u64))
+                .unwrap();
+        }
     }
 }
 
@@ -104,7 +128,8 @@ impl RelativeStateProvider for BlindRelativeStateProvider {
             angle: 0.,
             curvature: self.last_command.curvature as f64,
             speed: self.last_command.speed as f64,
-        }.step_time(self.previous_command_for);
+        }
+        .step_time(self.previous_command_for);
 
         result
     }
@@ -118,7 +143,7 @@ impl BlindRelativeStateProvider {
             previous_command_for: Duration::ZERO,
         }
     }
-    
+
     fn set_command(&mut self, command: SimpleDrive) {
         self.last_command = command;
         self.previous_command_for = self.last_command_at.elapsed();

@@ -9,4 +9,6 @@ Software for one of UTS's enties into the 2024 Droid Racing Challenge hosted by 
 - `/micro` - Control code to run on a raspberry pi pico - C++
 
 requires debian packages:
+    - libclang-dev
+    - libopencv-dev
     - protobuf-compiler

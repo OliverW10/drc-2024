@@ -2,12 +2,16 @@ use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
-    thread, time::{Duration, Instant},
+    thread,
+    time::{Duration, Instant},
 };
 
 use prost::Message;
 
-use crate::{logging::Logger, messages::{self, command::CommandMode}};
+use crate::{
+    logging::Logger,
+    messages::{self, command::CommandMode},
+};
 
 // Something to recive commands from
 pub trait Commander {
@@ -78,7 +82,10 @@ impl NetworkComms {
                     let sent = stream.write(&to_send_buf);
 
                     if let Err(err) = sent {
-                        println!("Connection write failed: '{}', closing this recieving thread", err);
+                        println!(
+                            "Connection write failed: '{}', closing this recieving thread",
+                            err
+                        );
                         break;
                     }
                     reset_map(&mut to_send);
@@ -101,18 +108,23 @@ impl Logger for NetworkComms {
     }
 }
 
-fn accumulate_diagnostic_map(target: &mut messages::diagnostic::FullDiagnostic, new: &messages::diagnostic::FullDiagnostic) {
+fn accumulate_diagnostic_map(
+    target: &mut messages::diagnostic::FullDiagnostic,
+    new: &messages::diagnostic::FullDiagnostic,
+) {
     // Replace the diagnostic and path with most recent
     target.diagnostic = new.diagnostic.clone();
     target.path = new.path.clone();
     // Accumulate map updates
     target.map_update = match (&mut target.map_update, &new.map_update) {
-        (None, _) => new.map_update.clone(), 
-        (Some(old_map), Some(new_map))  => {
-            old_map.points_added.append(&mut new_map.points_added.clone());
+        (None, _) => new.map_update.clone(),
+        (Some(old_map), Some(new_map)) => {
+            old_map
+                .points_added
+                .append(&mut new_map.points_added.clone());
             old_map.removed_ids.append(&mut new_map.removed_ids.clone());
             target.map_update.clone() // TODO: avoid clone
-        },
+        }
         (Some(_), None) => target.map_update.clone(),
     };
 }
@@ -132,7 +144,7 @@ impl Commander for NetworkComms {
                 return messages::command::DriveCommand {
                     state: CommandMode::StateOff as i32,
                     throttle: 0.,
-                    turn: 0.
+                    turn: 0.,
                 };
             }
         }

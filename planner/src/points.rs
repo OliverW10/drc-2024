@@ -1,5 +1,7 @@
 use std::{
-    collections::HashMap, fmt::{self, Display}, ops
+    collections::HashMap,
+    fmt::{self, Display},
+    ops,
 };
 
 #[derive(Copy, Clone, PartialEq, Default, Debug)]
@@ -167,7 +169,7 @@ impl GridIndex {
 pub struct GridPointMap {
     grid: HashMap<GridIndex, Vec<Point>>,
     arrow_points: Vec<Point>,
-    removed_ids: Vec<PointID>
+    removed_ids: Vec<PointID>,
 }
 
 impl GridPointMap {
@@ -181,25 +183,37 @@ impl GridPointMap {
 }
 
 impl PointMap for GridPointMap {
-
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
         let mut result = Vec::new();
         result.append(&mut self.arrow_points.clone());
 
-        let top_left = GridIndex::from_pos(around + Pos {x: -max_dist, y: -max_dist});
-        let bottom_right = GridIndex::from_pos(around + Pos {x: max_dist, y: max_dist});
+        let top_left = GridIndex::from_pos(
+            around
+                + Pos {
+                    x: -max_dist,
+                    y: -max_dist,
+                },
+        );
+        let bottom_right = GridIndex::from_pos(
+            around
+                + Pos {
+                    x: max_dist,
+                    y: max_dist,
+                },
+        );
 
-        for x in top_left.x..bottom_right.x+1 {
-            for y in top_left.y..bottom_right.y+1 {
+        for x in top_left.x..bottom_right.x + 1 {
+            for y in top_left.y..bottom_right.y + 1 {
                 let key = GridIndex { x, y };
-                if let Some(points) = self.grid.get(&key){
+                if let Some(points) = self.grid.get(&key) {
                     result.append(
-                        &mut points.iter()
-                        .filter(|point| point.pos.dist(around) < max_dist)
-                        .map(|p| p.clone())
-                        .collect()
+                        &mut points
+                            .iter()
+                            .filter(|point| point.pos.dist(around) < max_dist)
+                            .map(|p| p.clone())
+                            .collect(),
                     );
                 }
             }
@@ -248,7 +262,11 @@ impl PointMap for GridPointMap {
 }
 
 // Filters points and records the ids of the removed ones
-fn filter_with_removed(points: &mut Vec<Point>, predicate: &dyn Fn(&Point) -> bool, removed: &mut Vec<PointID>) {
+fn filter_with_removed(
+    points: &mut Vec<Point>,
+    predicate: &dyn Fn(&Point) -> bool,
+    removed: &mut Vec<PointID>,
+) {
     puffin::profile_function!();
 
     points.retain(|item| {

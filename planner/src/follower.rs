@@ -1,7 +1,4 @@
-use crate::{
-    messages::path::SimpleDrive,
-    planner::Path,
-};
+use crate::{messages::path::SimpleDrive, planner::Path};
 
 // Currently this is finding a point x meters ahead on the path and pointing the steering at that,
 // an alternate approach would be to just use the curvature of the first planned path segment

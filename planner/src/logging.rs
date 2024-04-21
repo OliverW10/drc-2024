@@ -88,7 +88,7 @@ impl Logger for FileLogger {
 }
 
 pub struct AggregateLogger<'a> {
-    pub loggers: Vec<&'a mut dyn Logger>
+    pub loggers: Vec<&'a mut dyn Logger>,
 }
 
 impl<'a> Logger for AggregateLogger<'a> {

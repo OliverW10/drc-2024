@@ -7,3 +7,4 @@ micro-py/.venv
 micro-py/wifi_creds.py
 **/node_modules
 **.log
+**/.env

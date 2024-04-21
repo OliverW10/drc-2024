@@ -1,6 +1,12 @@
-use std::{io::{Read, Write}, net::{SocketAddr, TcpStream}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
-use prost::Message;
 use crate::messages;
+use prost::Message;
+use std::{
+    io::{Read, Write},
+    net::{SocketAddr, TcpStream},
+    sync::{Arc, Mutex},
+    thread,
+    time::{Duration, Instant},
+};
 
 pub const CONNECTED_TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -21,7 +27,7 @@ impl Default for CommsState {
             last_latency: Duration::ZERO,
             last_message_at: Instant::now().checked_sub(CONNECTED_TIMEOUT).unwrap(),
             map: Vec::new(),
-            ip: SocketAddr::from(([127, 0, 0, 1], 3141))
+            ip: SocketAddr::from(([127, 0, 0, 1], 3141)),
         }
     }
 }
@@ -52,7 +58,7 @@ fn update_map(map: &mut Vec<messages::path::MapPoint>, map_update: &messages::pa
     map.retain(|point| !map_update.removed_ids.contains(&point.id));
 }
 
-pub fn start_request_loop(state: Arc<Mutex<CommsState>>){
+pub fn start_request_loop(state: Arc<Mutex<CommsState>>) {
     thread::spawn(move || {
         let mut connection = wait_to_connect(Arc::clone(&state));
         connection.set_nodelay(true).unwrap();
@@ -69,18 +75,22 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>){
                 let recieved_bytes = connection.read(&mut buf[..]).unwrap();
                 local_state.last_latency = message_sent_at.elapsed();
                 local_state.last_message_at = Instant::now();
-                
+
                 local_state.last_recieved_diagnostic.clear();
                 let result = local_state
                     .last_recieved_diagnostic
                     .merge_length_delimited(&buf[..]);
-                
+
                 if result.is_err() {
                     println!("Could not decode messages {} bytes", recieved_bytes);
                     continue;
                 }
 
-                let map_update = local_state.last_recieved_diagnostic.map_update.clone().unwrap_or_default();
+                let map_update = local_state
+                    .last_recieved_diagnostic
+                    .map_update
+                    .clone()
+                    .unwrap_or_default();
                 update_map(&mut local_state.map, &map_update);
             }
             std::thread::sleep(Duration::from_secs_f64(0.033));

@@ -1,8 +1,8 @@
 mod arrow;
 mod lines;
+mod mock;
 mod obstacle;
 mod perspective;
-mod mock;
 
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
@@ -18,7 +18,11 @@ use crate::{
 use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
 
 pub trait ObjectFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error>;
+    fn get_points(
+        &mut self,
+        image: &opencv::core::Mat,
+        state: &CarState,
+    ) -> Result<Vec<Point>, opencv::Error>;
 }
 
 pub struct Vision {
@@ -71,7 +75,13 @@ impl Vision {
                 width: size.width,
                 height: size.height - top_crop,
             };
-            self.cropped = image.apply_1(roi).unwrap();
+            let cropped_result = image.apply_1(roi);
+            if let Ok(cropped) = cropped_result {
+                self.cropped = cropped;
+            } else {
+                println!("Could not crop image, likely an empty image");
+                return Vec::new();
+            }
         }
         // am .unwrap'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway

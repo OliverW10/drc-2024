@@ -145,8 +145,7 @@ impl Planner {
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
-        let time_budget = Duration::from_millis(3); // for laptop
-        // let time_budget = Duration::from_millis(100); // for pi
+        let time_budget = Duration::from_millis(30);
         let started = Instant::now();
 
         let starting_node = PathNodeData {
@@ -165,15 +164,17 @@ impl Planner {
         while let Some(current) = open_set.pop() {
             total_paths += 1;
             let current_rc = Rc::new(PathNode::Node(current.clone()));
-            
-            if current.steps > best_path.steps || (current.steps == best_path.steps && current.distance < best_path.distance) {
+
+            if current.steps > best_path.steps
+                || (current.steps == best_path.steps && current.distance < best_path.distance)
+            {
                 best_path = current.clone();
             }
             if started.elapsed() > time_budget {
                 break;
             }
             if current.steps > PLAN_MAX_STEPS {
-                continue
+                continue;
             }
 
             let next_drive_states = get_possible_next_states(current.state);

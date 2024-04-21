@@ -22,18 +22,18 @@ mod messages {
     }
 }
 
-use std::{collections::VecDeque, time::Instant};
+use camera::{Camera, ImageProvider};
 use comms::{Commander, NetworkComms};
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
 use logging::{AggregateLogger, FileLogger, Logger};
-use messages::{command::CommandMode, path::SimpleDrive, diagnostic::Diagnostic};
+use messages::{command::CommandMode, diagnostic::Diagnostic, path::SimpleDrive};
 use opencv::Result;
 use planner::Planner;
-use points::{PointMap, GridPointMap, Pos};
-use vision::Vision;
-use camera::{Camera, ImageProvider};
+use points::{GridPointMap, PointMap, Pos};
 use state::CarState;
+use std::{collections::VecDeque, time::Instant};
+use vision::Vision;
 
 fn main() -> Result<()> {
     // Create objects
@@ -98,8 +98,10 @@ fn main() -> Result<()> {
 
         driver.drive(command);
 
-    
-        AggregateLogger { loggers: vec![&mut network_comms, &mut file_logger]}.send(
+        AggregateLogger {
+            loggers: vec![&mut network_comms, &mut file_logger],
+        }
+        .send(
             &path,
             &new_points,
             &point_map.get_last_removed_ids(),
@@ -120,7 +122,15 @@ fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
     Diagnostic {
         actual_speed: state.speed as f32,
         actual_turn: state.curvature as f32,
-        framerate_avg: if frametime_avg != 0.0 { 1.0 / frametime_avg } else { 0.0 },
-        framerate_90: if frametime_max != 0.0 {1.0 / frametime_max } else {0.0},
+        framerate_avg: if frametime_avg != 0.0 {
+            1.0 / frametime_avg
+        } else {
+            0.0
+        },
+        framerate_90: if frametime_max != 0.0 {
+            1.0 / frametime_max
+        } else {
+            0.0
+        },
     }
 }

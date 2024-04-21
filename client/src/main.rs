@@ -1,6 +1,6 @@
 mod colours;
-mod components;
 mod comms;
+mod components;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -17,15 +17,18 @@ use components::{change_command_from_keys, driver_display, map_display, state_se
 use eframe::egui::{self, Color32, RichText};
 use messages::command::CommandMode;
 use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, sync::{Arc, Mutex}, time::{Duration, Instant}
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    str::FromStr,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
 };
 
 impl ToString for CommandMode {
     fn to_string(&self) -> String {
         match *self {
-            CommandMode::StateOff =>  "Disabled",
+            CommandMode::StateOff => "Disabled",
             CommandMode::StateAuto => "  Auto  ",
-            CommandMode::StateManual=>" Manual ",
+            CommandMode::StateManual => " Manual ",
         }
         .to_string()
     }
@@ -45,10 +48,9 @@ fn main() -> Result<(), eframe::Error> {
     }));
 
     start_request_loop(Arc::clone(&state_main));
-    
 
     let mut mode = CommandMode::StateOff;
-    let mut ip_str = "127.0.0.1".to_owned();
+    let mut ip_str = "192.168.1.113".to_owned();
     let mut is_connected = false;
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);
@@ -76,8 +78,24 @@ fn main() -> Result<(), eframe::Error> {
                 }
 
                 change_command_from_keys(ui, delta_time, &mut state.command_to_send, &mut mode);
-                driver_display(ui, &state.command_to_send, &state.last_recieved_diagnostic.diagnostic.clone().unwrap_or_default());
-                map_display(ui, &state.map, &state.last_recieved_diagnostic.path.clone().unwrap_or_default());
+                driver_display(
+                    ui,
+                    &state.command_to_send,
+                    &state
+                        .last_recieved_diagnostic
+                        .diagnostic
+                        .clone()
+                        .unwrap_or_default(),
+                );
+                map_display(
+                    ui,
+                    &state.map,
+                    &state
+                        .last_recieved_diagnostic
+                        .path
+                        .clone()
+                        .unwrap_or_default(),
+                );
 
                 is_connected = state.last_message_at.elapsed() < CONNECTED_TIMEOUT;
 
