@@ -1,6 +1,6 @@
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
 use serial2::{self, SerialPort};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct CarCommander {
     driver: Box<dyn Driver>,
@@ -93,18 +93,20 @@ pub trait RelativeStateProvider {
 
 struct BlindRelativeStateProvider {
     last_command: SimpleDrive,
-    last_command_time: Instant,
+    last_command_at: Instant,
+    previous_command_for: Duration,
 }
 
 impl RelativeStateProvider for BlindRelativeStateProvider {
     fn get_movement(&self) -> CarState {
-        CarState {
+        let result = CarState {
             pos: Pos { x: 0., y: 0. },
             angle: 0.,
             curvature: self.last_command.curvature as f64,
             speed: self.last_command.speed as f64,
-        }
-        .step_time(self.last_command_time.elapsed())
+        }.step_time(self.previous_command_for);
+
+        result
     }
 }
 
@@ -112,12 +114,14 @@ impl BlindRelativeStateProvider {
     fn new() -> BlindRelativeStateProvider {
         BlindRelativeStateProvider {
             last_command: SimpleDrive::default(),
-            last_command_time: Instant::now(),
+            last_command_at: Instant::now(),
+            previous_command_for: Duration::ZERO,
         }
     }
-
+    
     fn set_command(&mut self, command: SimpleDrive) {
         self.last_command = command;
-        self.last_command_time = Instant::now();
+        self.previous_command_for = self.last_command_at.elapsed();
+        self.last_command_at = Instant::now();
     }
 }

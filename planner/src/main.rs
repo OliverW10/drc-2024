@@ -23,29 +23,22 @@ mod messages {
 }
 
 use std::{collections::VecDeque, time::Instant};
-use comms::Commander;
+use comms::{Commander, NetworkComms};
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
 use follower::Follower;
-use logging::AggregateLogger;
-use messages::{command::CommandMode, path::SimpleDrive};
+use logging::{AggregateLogger, FileLogger, Logger};
+use messages::{command::CommandMode, path::SimpleDrive, diagnostic::Diagnostic};
 use opencv::Result;
 use planner::Planner;
-use points::{PointMap, SimplePointMap};
+use points::{PointMap, GridPointMap, Pos};
 use vision::Vision;
-
-use crate::{
-    camera::{Camera, ImageProvider},
-    comms::NetworkComms,
-    logging::{FileLogger, Logger},
-    messages::diagnostic::Diagnostic,
-    points::Pos,
-    state::CarState,
-};
+use camera::{Camera, ImageProvider};
+use state::CarState;
 
 fn main() -> Result<()> {
     // Create objects
     let mut camera = Camera::new();
-    let point_map = &mut SimplePointMap::new() as &mut dyn PointMap;
+    let point_map = &mut GridPointMap::new() as &mut dyn PointMap;
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
@@ -65,7 +58,6 @@ fn main() -> Result<()> {
     let mut frame_times = VecDeque::new();
     frame_times.push_back(0 as f32);
 
-    // let _ = setup_profiler();
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
     println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
@@ -79,7 +71,8 @@ fn main() -> Result<()> {
             None => return Ok(()),
         };
 
-        current_state += driver.get_state_provider().get_movement();
+        let movement = driver.get_state_provider().get_movement();
+        current_state += movement;
 
         let network_command = network_comms.get_latest_message();
 
@@ -120,11 +113,6 @@ fn main() -> Result<()> {
         last_frame = Instant::now();
     }
 }
-
-// fn setup_profiler() -> puffin_http::Server {
-//     // https://github.com/EmbarkStudios/puffin/tree/main/puffin
-    
-// }
 
 fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
     let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;

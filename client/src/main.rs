@@ -14,10 +14,10 @@ mod messages {
 }
 use comms::{start_request_loop, CommsState, CONNECTED_TIMEOUT};
 use components::{change_command_from_keys, driver_display, map_display, state_selector};
-use eframe::egui::{self, RichText};
+use eframe::egui::{self, Color32, RichText};
 use messages::command::CommandMode;
 use std::{
-    sync::{Arc, Mutex}, time::{Duration, Instant}
+    net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, sync::{Arc, Mutex}, time::{Duration, Instant}
 };
 
 impl ToString for CommandMode {
@@ -48,7 +48,7 @@ fn main() -> Result<(), eframe::Error> {
     
 
     let mut mode = CommandMode::StateOff;
-    let mut ip = String::new();
+    let mut ip_str = "127.0.0.1".to_owned();
     let mut is_connected = false;
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);
@@ -57,12 +57,12 @@ fn main() -> Result<(), eframe::Error> {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Car IP Address");
-                ui.text_edit_singleline(&mut ip);
+                ui.text_edit_singleline(&mut ip_str);
             });
             if is_connected {
-                ui.label(RichText::new("Connected").color(colours::CONNECTED_TEXT));
+                ui.label(RichText::new("Connected").color(Color32::LIGHT_GREEN));
             } else {
-                ui.label(RichText::new("Disconnected").color(colours::NOT_CONNECTED_TEXT));
+                ui.label(RichText::new("Disconnected").color(Color32::RED));
             }
             ui.heading("UTS DRC 24");
             state_selector(ui, &mut mode);
@@ -70,8 +70,12 @@ fn main() -> Result<(), eframe::Error> {
             {
                 let mut state = state_main.lock().unwrap();
                 state.command_to_send.state = mode as i32;
+                let ip_addr_result = IpAddr::from_str(&ip_str);
+                if let Ok(ip_addr) = ip_addr_result {
+                    state.ip = SocketAddr::new(ip_addr, 3141);
+                }
 
-                change_command_from_keys(ui, delta_time, &mut state.command_to_send);
+                change_command_from_keys(ui, delta_time, &mut state.command_to_send, &mut mode);
                 driver_display(ui, &state.command_to_send, &state.last_recieved_diagnostic.diagnostic.clone().unwrap_or_default());
                 map_display(ui, &state.map, &state.last_recieved_diagnostic.path.clone().unwrap_or_default());
 

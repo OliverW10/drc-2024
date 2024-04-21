@@ -4,7 +4,7 @@ use opencv::{
     videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst},
 };
 
-const SHOULD_DISPLAY_VIDEO: bool = true;
+const SHOULD_DISPLAY_VIDEO: bool = false;
 
 pub trait ImageProvider {
     fn get_frame(&mut self) -> Option<&Mat>;

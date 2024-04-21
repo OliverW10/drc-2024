@@ -87,6 +87,7 @@ pub struct Point {
 
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point>;
+    fn get_all_points(&self) -> Vec<Point>;
     fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
     fn get_last_removed_ids(&mut self) -> Vec<PointID>;
@@ -140,6 +141,10 @@ impl PointMap for SimplePointMap {
         puffin::profile_function!();
         self.removed_ids.drain(..).collect()
     }
+
+    fn get_all_points(&self) -> Vec<Point> {
+        self.all_points.clone()
+    }
 }
 
 const GRID_SIZE: f64 = 0.2;
@@ -166,7 +171,7 @@ pub struct GridPointMap {
 }
 
 impl GridPointMap {
-    fn new() -> GridPointMap {
+    pub fn new() -> GridPointMap {
         GridPointMap {
             grid: HashMap::new(),
             arrow_points: Vec::new(),
@@ -178,6 +183,8 @@ impl GridPointMap {
 impl PointMap for GridPointMap {
 
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
+        puffin::profile_function!();
+
         let mut result = Vec::new();
         result.append(&mut self.arrow_points.clone());
 
@@ -201,6 +208,8 @@ impl PointMap for GridPointMap {
     }
 
     fn add_points(&mut self, points: &Vec<Point>) {
+        puffin::profile_function!();
+
         for point in points.clone().into_iter() {
             match point.point_type {
                 PointType::ArrowLeft | PointType::ArrowRight => {
@@ -215,6 +224,8 @@ impl PointMap for GridPointMap {
     }
 
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
+        puffin::profile_function!();
+
         filter_with_removed(&mut self.arrow_points, predicate, &mut self.removed_ids);
 
         for points in self.grid.values_mut() {
@@ -225,10 +236,21 @@ impl PointMap for GridPointMap {
     fn get_last_removed_ids(&mut self) -> Vec<u32> {
         self.removed_ids.drain(..).collect()
     }
+
+    fn get_all_points(&self) -> Vec<Point> {
+        let mut result = Vec::new();
+        for bucket in self.grid.values() {
+            result.append(&mut bucket.clone());
+        }
+        result.append(&mut self.arrow_points.clone());
+        result
+    }
 }
 
 // Filters points and records the ids of the removed ones
 fn filter_with_removed(points: &mut Vec<Point>, predicate: &dyn Fn(&Point) -> bool, removed: &mut Vec<PointID>) {
+    puffin::profile_function!();
+
     points.retain(|item| {
         if predicate(item) {
             true

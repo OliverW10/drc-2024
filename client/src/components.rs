@@ -2,11 +2,10 @@ use std::{iter::zip, time::Duration};
 
 use eframe::egui::{self, Color32, Key, Pos2, Rect, Stroke, Vec2};
 
-use crate::{colours::{self, point_colour}, messages::{self, command::CommandMode, path::PointType}};
+use crate::{colours::point_colour, messages::{self, command::CommandMode, path::PointType}};
 
 
 pub fn state_selector(ui: &mut egui::Ui, current_mode: &mut CommandMode) {
-    // TODO: radio buttons?
     ui.horizontal(|ui| {
         ui.label(current_mode.to_string());
         if ui.button("Stop").clicked() {
@@ -45,7 +44,7 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<messages::path::MapPoint>, path:
     let map_center = Pos2 { x: 0., y: 0. };
     let map_scale = 1./4.; // 4x4 meter map
     let paint = ui.painter().with_clip_rect(MAP_RECT);
-    paint.rect_filled(MAP_RECT, 0., colours::SHADE);
+    paint.rect_filled(MAP_RECT, 0., Color32::DARK_GRAY);
 
     for point in map {
         let pos = Pos2 { x: point.x, y: point.y };
@@ -81,9 +80,8 @@ fn change_input(dt: Duration, last: f32, is_positive: bool, is_negative: bool, c
     }
 }
 
-pub fn change_command_from_keys(ui: &mut egui::Ui, dt: Duration, command: &mut messages::command::DriveCommand) {
-
-    let keys = ui.input(|i| i.keys_down.clone());
+pub fn change_command_from_keys(ui: &mut egui::Ui, dt: Duration, command: &mut messages::command::DriveCommand, mode: &mut messages::command::CommandMode) {
+    let (keys, space) = ui.input(|i| (i.keys_down.clone(), i.key_released(Key::Space)));
     let is_left = keys.contains(&Key::ArrowLeft) || keys.contains(&Key::A);
     let is_right = keys.contains(&Key::ArrowRight) || keys.contains(&Key::D);
     let is_up = keys.contains(&Key::ArrowUp) || keys.contains(&Key::W);
@@ -91,6 +89,10 @@ pub fn change_command_from_keys(ui: &mut egui::Ui, dt: Duration, command: &mut m
 
     command.throttle = change_input(dt, command.throttle, is_up, is_down, ACCEL, MAX_SPEED, SPEED_DECAY);
     command.turn = change_input(dt, command.turn, is_right, is_left, TURN_RATE, MAX_TURN, TURN_DECAY);
+
+    if space {
+        *mode = CommandMode::StateOff;
+    }
 }
 
 pub fn driver_display(
@@ -101,7 +103,14 @@ pub fn driver_display(
 
     let paint = ui.painter().with_clip_rect(DRIVER_RECT);
     
-    paint.rect_filled(DRIVER_RECT, 0., colours::SHADE);
+    paint.rect_filled(DRIVER_RECT, 0., Color32::DARK_GRAY);
+    let outline_col = match CommandMode::try_from(last_command.state) {
+        Err(_) => Color32::RED,
+        Ok(CommandMode::StateOff) => Color32::BLACK,
+        Ok(CommandMode::StateAuto) => Color32::GREEN,
+        Ok(CommandMode::StateManual) => Color32::GOLD,
+    };
+    paint.rect_stroke(DRIVER_RECT, 0., Stroke::new(3.0, outline_col));
 
     let actual_pos = Pos2 {
         x: actual_driven.actual_turn / MAX_TURN,
@@ -110,7 +119,7 @@ pub fn driver_display(
     paint.circle(
         in_rect(actual_pos, DRIVER_RECT),
         10.,
-        colours::DRIVE_ACTUAL_BALL,
+        Color32::GRAY,
         Stroke::NONE,
     );
 
@@ -121,7 +130,7 @@ pub fn driver_display(
     paint.circle(
         in_rect(indicator_pos, DRIVER_RECT),
         10.,
-        colours::DRIVE_COMMAND_BALL,
+        Color32::WHITE,
         Stroke::NONE,
     );
 }

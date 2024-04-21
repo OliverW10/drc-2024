@@ -104,7 +104,7 @@ impl ObjectFinder for LineFinder {
     }
 }
 
-const DRAW_MASK: bool = true;
+const DRAW_MASK: bool = false;
 
 fn draw_mask_debug(
     wnd_name: &str,

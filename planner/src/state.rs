@@ -2,7 +2,7 @@ use std::{ops, time::Duration};
 
 use crate::points::Pos;
 
-#[derive(Copy, Clone, PartialEq, Default)]
+#[derive(Copy, Clone, PartialEq, Default, Debug)]
 pub struct CarState {
     pub pos: Pos,
     pub angle: f64,     // heading of the car

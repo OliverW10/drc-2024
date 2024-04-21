@@ -9,24 +9,25 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use crate::config::plan::{MAX_CURVATURE, PLAN_STEPS, PLAN_STEP_SIZE_METERS};
+use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
+use crate::planner::distance_calculators::EDGE_MAX_DIST;
 use crate::points::{Point, PointMap, Pos};
 use crate::state::CarState;
 
 mod distance_calculators {
-    use crate::points::Point;
+    use crate::{config::plan::PLAN_STEP_SIZE_METERS, points::Point};
 
     use super::CarState;
 
+    pub const EDGE_MAX_DIST: f64 = 0.3;
     pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {
         // add weight for being close to the point
         let max_weight = 3.0;
-        let start_dist = 0.3;
         let edge_dist = state.pos.dist(point.pos);
 
-        // goes from max_weight when at the edge to 0 when at start_dist away from edge
-        let weighting = (start_dist - edge_dist) / start_dist * max_weight;
+        // goes from max_weight when at the edge to 0 when at EDGE_MAX_DIST away from edge
+        let weighting = (EDGE_MAX_DIST - edge_dist) / EDGE_MAX_DIST * max_weight;
         if weighting >= 0.0 {
             weighting
         } else {
@@ -42,7 +43,7 @@ mod distance_calculators {
 
     pub fn calculate_curvature_weight(state: CarState) -> f64 {
         // add weighting to enourage taking smoother lines
-        state.curvature.abs().powf(3.0) * 0.2
+        state.curvature.abs().powf(2.0) * 0.4 * PLAN_STEP_SIZE_METERS
     }
 }
 
@@ -69,8 +70,6 @@ fn distance(state: CarState, nearby_points: &Vec<Point>) -> f64 {
 }
 
 pub fn get_possible_next_states(state: CarState) -> Vec<CarState> {
-    puffin::profile_function!();
-
     let mut output = Vec::new();
     let turn_options = 3; // per side
     for new_turn_index in -turn_options..turn_options + 1 {
@@ -146,7 +145,7 @@ impl Planner {
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
-        let time_budget = Duration::from_millis(20); // for laptop
+        let time_budget = Duration::from_millis(3); // for laptop
         // let time_budget = Duration::from_millis(100); // for pi
         let started = Instant::now();
 
@@ -166,30 +165,30 @@ impl Planner {
         while let Some(current) = open_set.pop() {
             total_paths += 1;
             let current_rc = Rc::new(PathNode::Node(current.clone()));
-
+            
             if current.steps > best_path.steps || (current.steps == best_path.steps && current.distance < best_path.distance) {
                 best_path = current.clone();
             }
             if started.elapsed() > time_budget {
                 break;
             }
-            
-            let next_drive_states = get_possible_next_states(current.state).into_iter();
-            let relevant_points = points.get_points_in_area(current.state.pos, 0.3); // TODO: magic number
-            let get_node_from_state = |state: CarState| {
-                puffin::profile_function!();
-                PathNodeData {
-                    state: state.step_distance(PLAN_STEP_SIZE_METERS),
-                    distance: current.distance + distance(state, &relevant_points),
+            if current.steps > PLAN_MAX_STEPS {
+                continue
+            }
+
+            let next_drive_states = get_possible_next_states(current.state);
+            let relevant_points = points.get_points_in_area(current.state.pos, EDGE_MAX_DIST);
+            for next_state in next_drive_states {
+                open_set.push(PathNodeData {
+                    state: next_state.step_distance(PLAN_STEP_SIZE_METERS),
+                    distance: current.distance + distance(next_state, &relevant_points),
                     prev: current_rc.clone(),
                     steps: current.steps + 1,
-                }
-            };
-            let next_nodes = next_drive_states.map(get_node_from_state);
-            open_set.extend(next_nodes);
+                })
+            }
         }
 
-        let all_points = points.get_points_in_area(Pos { x: 0., y: 0. }, 999.0);
+        let all_points = points.get_all_points();
         println!(
             "{} points, final path cost: {}, evaluated {} paths in {}ms",
             all_points.len(),

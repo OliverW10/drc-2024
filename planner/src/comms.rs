@@ -34,7 +34,7 @@ impl NetworkComms {
 
     // Starts a thread which accepts incoming connections
     pub fn start_accept_loop(&self) {
-        let listener = TcpListener::bind("127.0.0.1:3141").unwrap();
+        let listener = TcpListener::bind("0.0.0.0:3141").unwrap();
         // not sure if the arc clone is nessisary twice, but it was giving errors without
         let last_recieved = Arc::clone(&self.last_recieved);
         let to_send = Arc::clone(&self.to_send);
@@ -67,6 +67,7 @@ impl NetworkComms {
                     // Wait for and recieve command
                     stream.read(&mut buf).unwrap();
                     let mut recieved = recieved_mutex.lock().unwrap();
+                    recieved.clear();
                     recieved.merge_length_delimited(&buf[..]).unwrap();
                 }
 
