@@ -28,10 +28,7 @@ impl Camera {
         cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
         let frame = Mat::default();
 
-        Camera {
-            cap: cap,
-            frame: frame,
-        }
+        Camera { cap: cap, frame: frame }
     }
 }
 

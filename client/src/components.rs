@@ -4,6 +4,7 @@ use eframe::egui::{self, Color32, Key, Pos2, Rect, Stroke, Vec2};
 
 use crate::{
     colours::point_colour,
+    comms::RecievedMapPoint,
     messages::{self, command::CommandMode, path::PointType},
 };
 
@@ -42,11 +43,7 @@ fn in_rect(p: Pos2, r: Rect) -> Pos2 {
     r.lerp_inside(vec)
 }
 
-pub fn map_display(
-    ui: &mut egui::Ui,
-    map: &Vec<messages::path::MapPoint>,
-    path: &messages::path::Path,
-) {
+pub fn map_display(ui: &mut egui::Ui, map: &Vec<RecievedMapPoint>, path: &messages::path::Path) {
     let map_center = Pos2 { x: 0., y: 0. };
     let map_scale = 1. / 4.; // 4x4 meter map
     let paint = ui.painter().with_clip_rect(MAP_RECT);
@@ -54,33 +51,16 @@ pub fn map_display(
 
     for point in map {
         let pos = Pos2 {
-            x: point.x,
-            y: point.y,
+            x: point.inner.x,
+            y: point.inner.y,
         };
-        let point_type = PointType::try_from(point.point_type).unwrap();
-        paint.circle(
-            in_rect(pos * map_scale, MAP_RECT),
-            2.,
-            point_colour(&point_type),
-            Stroke::NONE,
-        );
+        let point_type = PointType::try_from(point.inner.point_type).unwrap();
+        paint.circle(in_rect(pos * map_scale, MAP_RECT), 1., point_colour(&point_type), Stroke::NONE);
     }
     if path.points.len() > 0 {
         for (prev, next) in zip(&path.points[..], &path.points[1..]) {
-            let a = in_rect(
-                Pos2 {
-                    x: prev.x,
-                    y: prev.y,
-                } * map_scale,
-                MAP_RECT,
-            );
-            let b = in_rect(
-                Pos2 {
-                    x: next.x,
-                    y: next.y,
-                } * map_scale,
-                MAP_RECT,
-            );
+            let a = in_rect(Pos2 { x: prev.x, y: prev.y } * map_scale, MAP_RECT);
+            let b = in_rect(Pos2 { x: next.x, y: next.y } * map_scale, MAP_RECT);
             paint.line_segment([a, b], Stroke::new(1., Color32::WHITE));
         }
     }
@@ -96,12 +76,7 @@ const SPEED_DECAY: f32 = 1.;
 const TURN_DECAY: f32 = 3.;
 
 fn change_input(
-    dt: Duration,
-    last: f32,
-    is_positive: bool,
-    is_negative: bool,
-    change_from_input: f32,
-    max_output: f32,
+    dt: Duration, last: f32, is_positive: bool, is_negative: bool, change_from_input: f32, max_output: f32,
     decay_rate: f32,
 ) -> f32 {
     let input = (is_positive as i32 - is_negative as i32) as f32;
@@ -115,9 +90,7 @@ fn change_input(
 }
 
 pub fn change_command_from_keys(
-    ui: &mut egui::Ui,
-    dt: Duration,
-    command: &mut messages::command::DriveCommand,
+    ui: &mut egui::Ui, dt: Duration, command: &mut messages::command::DriveCommand,
     mode: &mut messages::command::CommandMode,
 ) {
     let (keys, space) = ui.input(|i| (i.keys_down.clone(), i.key_released(Key::Space)));
@@ -126,24 +99,8 @@ pub fn change_command_from_keys(
     let is_up = keys.contains(&Key::ArrowUp) || keys.contains(&Key::W);
     let is_down = keys.contains(&Key::ArrowDown) || keys.contains(&Key::S);
 
-    command.throttle = change_input(
-        dt,
-        command.throttle,
-        is_up,
-        is_down,
-        ACCEL,
-        MAX_SPEED,
-        SPEED_DECAY,
-    );
-    command.turn = change_input(
-        dt,
-        command.turn,
-        is_right,
-        is_left,
-        TURN_RATE,
-        MAX_TURN,
-        TURN_DECAY,
-    );
+    command.throttle = change_input(dt, command.throttle, is_up, is_down, ACCEL, MAX_SPEED, SPEED_DECAY);
+    command.turn = change_input(dt, command.turn, is_right, is_left, TURN_RATE, MAX_TURN, TURN_DECAY);
 
     if space {
         *mode = CommandMode::StateOff;
@@ -151,9 +108,7 @@ pub fn change_command_from_keys(
 }
 
 pub fn driver_display(
-    ui: &mut egui::Ui,
-    last_command: &messages::command::DriveCommand,
-    actual_driven: &messages::diagnostic::Diagnostic,
+    ui: &mut egui::Ui, last_command: &messages::command::DriveCommand, actual_driven: &messages::diagnostic::Diagnostic,
 ) {
     let paint = ui.painter().with_clip_rect(DRIVER_RECT);
 
@@ -170,21 +125,11 @@ pub fn driver_display(
         x: actual_driven.actual_turn / MAX_TURN,
         y: -actual_driven.actual_speed / MAX_SPEED,
     };
-    paint.circle(
-        in_rect(actual_pos, DRIVER_RECT),
-        10.,
-        Color32::GRAY,
-        Stroke::NONE,
-    );
+    paint.circle(in_rect(actual_pos, DRIVER_RECT), 10., Color32::GRAY, Stroke::NONE);
 
     let indicator_pos = Pos2 {
         x: last_command.turn / MAX_TURN,
         y: -last_command.throttle / MAX_SPEED,
     };
-    paint.circle(
-        in_rect(indicator_pos, DRIVER_RECT),
-        10.,
-        Color32::WHITE,
-        Stroke::NONE,
-    );
+    paint.circle(in_rect(indicator_pos, DRIVER_RECT), 10., Color32::WHITE, Stroke::NONE);
 }

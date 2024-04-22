@@ -23,12 +23,7 @@ fn get_perspective_matrix() -> Mat {
         Point2f { x: 0.5, y: 0.0 },
         Point2f { x: 0.5, y: 0.5 },
     ]);
-    get_perspective_transform(
-        &perspective_points_image,
-        &perspective_points_ground,
-        DECOMP_LU,
-    )
-    .unwrap()
+    get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
 }
 
 pub fn perspective_correct(points_ints_in_vec: &Vec<opencv::core::Point2i>) -> Vec<Pos> {

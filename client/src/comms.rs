@@ -10,12 +10,18 @@ use std::{
 
 pub const CONNECTED_TIMEOUT: Duration = Duration::from_millis(100);
 
+// TODO: could impl deref?
+pub struct RecievedMapPoint {
+    pub inner: messages::path::MapPoint,
+    at: Instant,
+}
+
 pub struct CommsState {
     pub command_to_send: messages::command::DriveCommand,
     pub last_recieved_diagnostic: messages::diagnostic::FullDiagnostic,
     pub last_latency: Duration,
     pub last_message_at: Instant,
-    pub map: Vec<messages::path::MapPoint>,
+    pub map: Vec<RecievedMapPoint>,
     pub ip: SocketAddr,
 }
 
@@ -53,9 +59,18 @@ fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
     }
 }
 
-fn update_map(map: &mut Vec<messages::path::MapPoint>, map_update: &messages::path::MapUpdate) {
-    map.extend(map_update.points_added.clone());
-    map.retain(|point| !map_update.removed_ids.contains(&point.id));
+const MAX_TIMEOUT: Duration = Duration::from_millis(300);
+fn update_map(map: &mut Vec<RecievedMapPoint>, map_update: &messages::path::MapUpdate) {
+    let mut new_points = map_update
+        .points_added
+        .iter()
+        .map(|p| RecievedMapPoint {
+            inner: p.clone(),
+            at: Instant::now(),
+        })
+        .collect();
+    map.append(&mut new_points);
+    map.retain(|point| !(map_update.removed_ids.contains(&point.inner.id) || point.at.elapsed() > MAX_TIMEOUT));
 }
 
 pub fn start_request_loop(state: Arc<Mutex<CommsState>>) {
@@ -77,12 +92,10 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>) {
                 local_state.last_message_at = Instant::now();
 
                 local_state.last_recieved_diagnostic.clear();
-                let result = local_state
-                    .last_recieved_diagnostic
-                    .merge_length_delimited(&buf[..]);
+                let result = local_state.last_recieved_diagnostic.merge_length_delimited(&buf[..]);
 
-                if result.is_err() {
-                    println!("Could not decode messages {} bytes", recieved_bytes);
+                if let Err(e) = result {
+                    println!("decode failed: {} bytes - {}", recieved_bytes, e);
                     continue;
                 }
 

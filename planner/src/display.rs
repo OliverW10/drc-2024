@@ -75,11 +75,7 @@ pub fn draw_map_debug(point_map: &Vec<Point>, path: &Path) {
         last_pnt = path_pnt.pos.clone();
     }
 
-    let time = 3.
-        * SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64();
+    let time = 3. * SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
     let steps = (time % 6.) as i32;
 
     draw_options(
@@ -134,14 +130,5 @@ fn draw_state_line(img: &mut Mat, start: CarState) {
 }
 
 fn dot(img: &mut Mat, p: &Pos, col: VecN<f64, 4>, n: i32) {
-    circle(
-        img,
-        map_to_img(p),
-        n,
-        col,
-        -1,
-        opencv::imgproc::LineTypes::FILLED.into(),
-        0,
-    )
-    .unwrap();
+    circle(img, map_to_img(p), n, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0).unwrap();
 }

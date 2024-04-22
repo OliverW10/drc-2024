@@ -81,21 +81,9 @@ fn main() -> Result<(), eframe::Error> {
                 driver_display(
                     ui,
                     &state.command_to_send,
-                    &state
-                        .last_recieved_diagnostic
-                        .diagnostic
-                        .clone()
-                        .unwrap_or_default(),
+                    &state.last_recieved_diagnostic.diagnostic.clone().unwrap_or_default(),
                 );
-                map_display(
-                    ui,
-                    &state.map,
-                    &state
-                        .last_recieved_diagnostic
-                        .path
-                        .clone()
-                        .unwrap_or_default(),
-                );
+                map_display(ui, &state.map, &state.last_recieved_diagnostic.path.clone().unwrap_or_default());
 
                 is_connected = state.last_message_at.elapsed() < CONNECTED_TIMEOUT;
 

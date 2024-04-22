@@ -42,10 +42,7 @@ fn main() -> Result<()> {
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
-    let mut driver = CarCommander::new(
-        Box::new(SerialDriver::new("/dev/ttyACM0")),
-        Box::new(PwmDriver::new()),
-    );
+    let mut driver = CarCommander::new(Box::new(SerialDriver::new("/dev/ttyACM0")), Box::new(PwmDriver::new()));
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
 
@@ -122,15 +119,7 @@ fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
     Diagnostic {
         actual_speed: state.speed as f32,
         actual_turn: state.curvature as f32,
-        framerate_avg: if frametime_avg != 0.0 {
-            1.0 / frametime_avg
-        } else {
-            0.0
-        },
-        framerate_90: if frametime_max != 0.0 {
-            1.0 / frametime_max
-        } else {
-            0.0
-        },
+        framerate_avg: if frametime_avg != 0.0 { 1.0 / frametime_avg } else { 0.0 },
+        framerate_90: if frametime_max != 0.0 { 1.0 / frametime_max } else { 0.0 },
     }
 }

@@ -21,11 +21,7 @@ fn jitter() -> Pos {
 }
 
 impl ObjectFinder for FakePointProvider {
-    fn get_points(
-        &mut self,
-        _: &opencv::core::Mat,
-        _: &CarState,
-    ) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, _: &opencv::core::Mat, _: &CarState) -> Result<Vec<Point>, opencv::Error> {
         let all_lines = vec![
             Lines {
                 point_type: PointType::LeftLine,
@@ -57,8 +53,7 @@ impl ObjectFinder for FakePointProvider {
                         id: rand::random(),
                         expire_at: expiry,
                         point_type: lines_of_type.point_type,
-                        pos: line[0].dist_along(line[1], rand::random::<f64>() * line_dist)
-                            + jitter(),
+                        pos: line[0].dist_along(line[1], rand::random::<f64>() * line_dist) + jitter(),
                     });
                 }
             }

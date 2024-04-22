@@ -1,10 +1,7 @@
 use opencv::{
     core::{in_range, Mat, VecN},
     highgui,
-    imgproc::{
-        circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes,
-        RetrievalModes,
-    },
+    imgproc::{circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes},
     types::VectorOfVectorOfPoint,
 };
 use rand::Rng;
@@ -26,7 +23,6 @@ pub struct LineFinder {
     // stored between frames to reduce memory allocation
     contours: VectorOfVectorOfPoint,
     mask: Mat,
-    blurred: Mat,
 }
 
 impl LineFinder {
@@ -34,7 +30,6 @@ impl LineFinder {
         LineFinder {
             contours: VectorOfVectorOfPoint::new(),
             mask: Mat::default(),
-            blurred: Mat::default(),
             line_type: obstacle_type,
             colour: colour,
         }
@@ -64,11 +59,7 @@ impl LineFinder {
 const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
-    fn get_points(
-        &mut self,
-        image: &opencv::core::Mat,
-        state: &CarState,
-    ) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
 
         {
@@ -119,23 +110,14 @@ impl ObjectFinder for LineFinder {
 
 const DRAW_MASK: bool = false;
 
-fn draw_mask_debug(
-    wnd_name: &str,
-    mask: &Mat,
-    points_before: &Vec<opencv::core::Point>,
-) -> Result<(), opencv::Error> {
+fn draw_mask_debug(wnd_name: &str, mask: &Mat, points_before: &Vec<opencv::core::Point>) -> Result<(), opencv::Error> {
     puffin::profile_function!();
 
     if !DRAW_MASK {
         return Ok(());
     }
     let mut display = Mat::default();
-    cvt_color(
-        mask,
-        &mut display,
-        ColorConversionCodes::COLOR_GRAY2BGR.into(),
-        0,
-    )?;
+    cvt_color(mask, &mut display, ColorConversionCodes::COLOR_GRAY2BGR.into(), 0)?;
     for pnt in points_before {
         circle(
             &mut display,

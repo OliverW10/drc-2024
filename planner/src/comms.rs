@@ -58,10 +58,8 @@ impl NetworkComms {
     // Starts a thread which waits for incoming commands
     // and then responds with the most recent diagnostics
     pub fn start_recv_loop(
-        mut stream: TcpStream,
-        recieved_mutex: Arc<Mutex<messages::command::DriveCommand>>,
-        to_send_mutex: Arc<Mutex<messages::diagnostic::FullDiagnostic>>,
-        time_mutex: Arc<Mutex<Instant>>,
+        mut stream: TcpStream, recieved_mutex: Arc<Mutex<messages::command::DriveCommand>>,
+        to_send_mutex: Arc<Mutex<messages::diagnostic::FullDiagnostic>>, time_mutex: Arc<Mutex<Instant>>,
     ) {
         thread::spawn(move || {
             let mut buf = [0; 2048];
@@ -82,10 +80,7 @@ impl NetworkComms {
                     let sent = stream.write(&to_send_buf);
 
                     if let Err(err) = sent {
-                        println!(
-                            "Connection write failed: '{}', closing this recieving thread",
-                            err
-                        );
+                        println!("Connection write failed: '{}', closing this recieving thread", err);
                         break;
                     }
                     reset_map(&mut to_send);
@@ -109,8 +104,7 @@ impl Logger for NetworkComms {
 }
 
 fn accumulate_diagnostic_map(
-    target: &mut messages::diagnostic::FullDiagnostic,
-    new: &messages::diagnostic::FullDiagnostic,
+    target: &mut messages::diagnostic::FullDiagnostic, new: &messages::diagnostic::FullDiagnostic,
 ) {
     // Replace the diagnostic and path with most recent
     target.diagnostic = new.diagnostic.clone();
@@ -119,9 +113,7 @@ fn accumulate_diagnostic_map(
     target.map_update = match (&mut target.map_update, &new.map_update) {
         (None, _) => new.map_update.clone(),
         (Some(old_map), Some(new_map)) => {
-            old_map
-                .points_added
-                .append(&mut new_map.points_added.clone());
+            old_map.points_added.append(&mut new_map.points_added.clone());
             old_map.removed_ids.append(&mut new_map.removed_ids.clone());
             target.map_update.clone() // TODO: avoid clone
         }

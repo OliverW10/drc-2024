@@ -120,10 +120,7 @@ impl Eq for PathNodeData {}
 
 impl Ord for PathNodeData {
     fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .distance
-            .partial_cmp(&self.distance)
-            .unwrap_or(Ordering::Equal)
+        other.distance.partial_cmp(&self.distance).unwrap_or(Ordering::Equal)
     }
 }
 

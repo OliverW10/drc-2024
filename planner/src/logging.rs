@@ -9,10 +9,7 @@ pub trait Logger {
 
     // Converts the functional types to the protobuf types which are actually sent with send_messages
     fn send(
-        &mut self,
-        path: &planner::Path,
-        new_points: &Vec<points::Point>,
-        removed_points: &Vec<u32>,
+        &mut self, path: &planner::Path, new_points: &Vec<points::Point>, removed_points: &Vec<u32>,
         diagnostic: &messages::diagnostic::Diagnostic,
     ) {
         let path_dto = Some(messages::path::Path {

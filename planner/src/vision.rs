@@ -18,11 +18,7 @@ use crate::{
 use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
 
 pub trait ObjectFinder {
-    fn get_points(
-        &mut self,
-        image: &opencv::core::Mat,
-        state: &CarState,
-    ) -> Result<Vec<Point>, opencv::Error>;
+    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error>;
 }
 
 pub struct Vision {
@@ -35,14 +31,8 @@ pub struct Vision {
 impl Vision {
     pub fn new() -> Vision {
         let mut point_finders: Vec<Box<dyn ObjectFinder>> = Vec::new();
-        point_finders.push(Box::new(LineFinder::new(
-            PointType::LeftLine,
-            colours::BLUE_MASK,
-        )));
-        point_finders.push(Box::new(LineFinder::new(
-            PointType::RightLine,
-            colours::YELLOW_MASK,
-        )));
+        point_finders.push(Box::new(LineFinder::new(PointType::LeftLine, colours::BLUE_MASK)));
+        point_finders.push(Box::new(LineFinder::new(PointType::RightLine, colours::YELLOW_MASK)));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_MASK)));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));
@@ -58,11 +48,7 @@ impl Vision {
     }
 
     // Runs all the vision modules that give their output in map points
-    pub fn get_points_from_image(
-        &mut self,
-        image: &opencv::core::Mat,
-        state: CarState,
-    ) -> Vec<Point> {
+    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, state: CarState) -> Vec<Point> {
         puffin::profile_function!();
 
         {
@@ -100,13 +86,7 @@ impl Vision {
 
         {
             puffin::profile_scope!("hsv");
-            cvt_color(
-                &self.blurred,
-                &mut self.hsv,
-                ColorConversionCodes::COLOR_BGR2HSV.into(),
-                0,
-            )
-            .unwrap();
+            cvt_color(&self.blurred, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
         }
 
         // TODO: thread::spawn for each point finder

@@ -262,11 +262,7 @@ impl PointMap for GridPointMap {
 }
 
 // Filters points and records the ids of the removed ones
-fn filter_with_removed(
-    points: &mut Vec<Point>,
-    predicate: &dyn Fn(&Point) -> bool,
-    removed: &mut Vec<PointID>,
-) {
+fn filter_with_removed(points: &mut Vec<Point>, predicate: &dyn Fn(&Point) -> bool, removed: &mut Vec<PointID>) {
     puffin::profile_function!();
 
     points.retain(|item| {
