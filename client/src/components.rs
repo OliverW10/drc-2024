@@ -1,10 +1,10 @@
 use std::{iter::zip, time::Duration};
 
-use eframe::egui::{self, Color32, Key, Pos2, Rect, Stroke, Vec2};
+use eframe::egui::{self, Align2, Color32, Key, Pos2, Rect, Stroke, Vec2};
 
 use crate::{
     colours::point_colour,
-    comms::RecievedMapPoint,
+    comms::MapPointWithTime,
     messages::{self, command::CommandMode, path::PointType},
 };
 
@@ -43,7 +43,7 @@ fn in_rect(p: Pos2, r: Rect) -> Pos2 {
     r.lerp_inside(vec)
 }
 
-pub fn map_display(ui: &mut egui::Ui, map: &Vec<RecievedMapPoint>, path: &messages::path::Path) {
+pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messages::path::Path) {
     let map_center = Pos2 { x: 0., y: 0. };
     let map_scale = 1. / 4.; // 4x4 meter map
     let paint = ui.painter().with_clip_rect(MAP_RECT);
@@ -55,8 +55,18 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<RecievedMapPoint>, path: &messag
             y: point.inner.y,
         };
         let point_type = PointType::try_from(point.inner.point_type).unwrap();
-        paint.circle(in_rect(pos * map_scale, MAP_RECT), 1., point_colour(&point_type), Stroke::NONE);
+        let c = match point_type {
+            PointType::ArrowLeft => "⟲",
+            PointType::ArrowRight => "⟳",
+            _ => "",
+        };
+        if c.len() == 0 {
+            paint.circle(in_rect(pos * map_scale, MAP_RECT), 1., point_colour(&point_type), Stroke::NONE);
+        } else {
+            paint.text(in_rect(pos * map_scale, MAP_RECT), Align2::CENTER_CENTER, c, egui::FontId::monospace(12.0), point_colour(&point_type));
+        }
     }
+
     if path.points.len() > 0 {
         for (prev, next) in zip(&path.points[..], &path.points[1..]) {
             let a = in_rect(Pos2 { x: prev.x, y: prev.y } * map_scale, MAP_RECT);

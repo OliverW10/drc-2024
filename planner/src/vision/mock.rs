@@ -30,6 +30,8 @@ impl ObjectFinder for FakePointProvider {
                     [Pos { x: -0.5, y: -3.5 }, Pos { x: 3.5, y: -3.5 }],
                     [Pos { x: 3.5, y: -3.5 }, Pos { x: 3.5, y: 0.5 }],
                     [Pos { x: 3.5, y: 0.5 }, Pos { x: -0.5, y: 0.5 }],
+
+                    [Pos { x: -4.0, y: -4.0}, Pos { x: -4.0, y: 4.0}],
                 ],
             },
             Lines {
@@ -39,12 +41,17 @@ impl ObjectFinder for FakePointProvider {
                     [Pos { x: 0.5, y: -2.5 }, Pos { x: 2.5, y: -2.5 }],
                     [Pos { x: 2.5, y: -2.5 }, Pos { x: 2.5, y: -0.5 }],
                     [Pos { x: 2.5, y: -0.5 }, Pos { x: 0.5, y: -0.5 }],
+
+                    [Pos { x: -1.5, y: -4.0}, Pos { x: -1.5, y: 4.0}],
                 ],
             },
         ];
 
-        let mut points = Vec::new();
         let expiry = get_line_exiry();
+        let mut points = vec![
+            Point { id: rand::random(), expire_at: expiry, pos: Pos { x: -2.75, y: 0.0 }, point_type: PointType::ArrowLeft},
+            Point { id: rand::random(), expire_at: expiry, pos: Pos { x: -2.75, y: -2.5 }, point_type: PointType::ArrowRight}
+        ];
         for lines_of_type in all_lines {
             for line in lines_of_type.lines {
                 let line_dist = line[0].dist(line[1]);

@@ -57,9 +57,14 @@ impl Pos {
         let t = dist / self.dist(other);
         self.lerp(other, t)
     }
+
+    // angle form origin
+    pub fn angle(&self) -> f64 {
+        self.y.atan2(self.x)
+    }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PointType {
     LeftLine,
     RightLine,
@@ -77,6 +82,16 @@ impl Display for PointType {
     }
 }
 
+impl PointType {
+    pub fn is_arrow(&self) -> bool {
+        *self == PointType::ArrowLeft || *self == PointType::ArrowRight
+    }
+
+    pub fn is_obstacle(&self) -> bool {
+        *self == PointType::LeftLine || *self == PointType::RightLine || *self == PointType::Obstacle
+    }
+}
+
 type PointID = u32;
 
 #[derive(Clone)]
@@ -89,6 +104,7 @@ pub struct Point {
 
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point>;
+    fn get_arrow_points(&self) -> Vec<Point>;
     fn get_all_points(&self) -> Vec<Point>;
     fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
@@ -101,7 +117,7 @@ pub struct SimplePointMap {
 }
 
 impl SimplePointMap {
-    pub fn new() -> SimplePointMap {
+    pub fn _new() -> SimplePointMap {
         SimplePointMap {
             all_points: Vec::new(),
             removed_ids: Vec::new(),
@@ -113,13 +129,21 @@ impl PointMap for SimplePointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
-        let ret: Vec<Point> = self
-            .all_points
+        self.all_points
             .iter()
-            .filter(|point| point.pos.dist(around) < max_dist)
+            .filter(|point| point.pos.dist(around) < max_dist && point.point_type.is_obstacle())
             .map(|p| p.clone())
-            .collect();
-        ret
+            .collect()
+    }
+
+    fn get_arrow_points(&self) -> Vec<Point> {
+        puffin::profile_function!();
+
+        self.all_points
+            .iter()
+            .filter(|point| point.point_type.is_arrow())
+            .map(|p| p.clone())
+            .collect()
     }
 
     fn add_points(&mut self, points: &Vec<Point>) {
@@ -186,9 +210,7 @@ impl PointMap for GridPointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
-        let mut result = Vec::new();
-        result.append(&mut self.arrow_points.clone());
-
+        
         let top_left = GridIndex::from_pos(
             around
                 + Pos {
@@ -202,8 +224,9 @@ impl PointMap for GridPointMap {
                     x: max_dist,
                     y: max_dist,
                 },
-        );
-
+            );
+            
+        let mut result = Vec::new();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
                 let key = GridIndex { x, y };
@@ -219,6 +242,10 @@ impl PointMap for GridPointMap {
             }
         }
         result
+    }
+
+    fn get_arrow_points(&self) -> Vec<Point> {
+        self.arrow_points.clone()
     }
 
     fn add_points(&mut self, points: &Vec<Point>) {

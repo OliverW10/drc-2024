@@ -49,7 +49,8 @@ fn main() -> Result<()> {
     // Initialise state
     let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;
-    current_state.pos = Pos { x: 0.1, y: 0.3 };
+    current_state.pos = Pos { x: -2.75, y: 2.0 };
+    // current_state.pos = Pos { x: 0.1, y: 0.3 };
 
     let mut last_frame = Instant::now();
     let mut frame_times = VecDeque::new();

@@ -1,5 +1,5 @@
 use crate::messages;
-use prost::{DecodeError, Message};
+use prost::Message;
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpStream},
@@ -11,7 +11,7 @@ use std::{
 pub const CONNECTED_TIMEOUT: Duration = Duration::from_millis(100);
 
 // TODO: could impl deref?
-pub struct RecievedMapPoint {
+pub struct MapPointWithTime {
     pub inner: messages::path::MapPoint,
     at: Instant,
 }
@@ -21,7 +21,7 @@ pub struct CommsState {
     pub last_recieved_diagnostic: messages::diagnostic::FullDiagnostic,
     pub last_latency: Duration,
     pub last_message_at: Instant,
-    pub map: Vec<RecievedMapPoint>,
+    pub map: Vec<MapPointWithTime>,
     pub ip: SocketAddr,
 }
 
@@ -41,30 +41,31 @@ impl Default for CommsState {
 fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
     let mut count = 0;
     loop {
-        {
+        let ip = {
             let local_state = state.lock().unwrap();
-            println!("Trying to connect");
-            match TcpStream::connect(local_state.ip) {
-                Ok(connection) => return connection,
-                Err(e) => println!(
-                    "Connection to {} failed {} times: '{}', retying in 1s",
-                    local_state.ip,
-                    count,
-                    e.to_string()
-                ),
-            };
-            count += 1;
-        }
+            local_state.ip.clone()
+        };
+        println!("Trying to connect");
+        match TcpStream::connect(ip) {
+            Ok(connection) => return connection,
+            Err(e) => println!(
+                "Connection to {} failed {} times: '{}', retying in 1s",
+                ip,
+                count,
+                e.to_string()
+            ),
+        };
+        count += 1;
         thread::sleep(Duration::from_secs(1));
     }
 }
 
 const MAX_TIMEOUT: Duration = Duration::from_millis(300);
-fn update_map(map: &mut Vec<RecievedMapPoint>, map_update: &messages::path::MapUpdate) {
+fn update_map(map: &mut Vec<MapPointWithTime>, map_update: &messages::path::MapUpdate) {
     let mut new_points = map_update
         .points_added
         .iter()
-        .map(|p| RecievedMapPoint {
+        .map(|p| MapPointWithTime {
             inner: p.clone(),
             at: Instant::now(),
         })

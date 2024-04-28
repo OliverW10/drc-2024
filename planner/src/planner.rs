@@ -12,22 +12,24 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
 use crate::planner::distance_calculators::EDGE_MAX_DIST;
-use crate::points::{Point, PointMap, Pos};
+use crate::points::{Point, PointMap, PointType, Pos};
 use crate::state::CarState;
 
 mod distance_calculators {
-    use crate::{config::plan::PLAN_STEP_SIZE_METERS, points::Point};
+    use std::f64::consts::PI;
+
+    use crate::{config::plan::PLAN_STEP_SIZE_METERS, points::{Point, PointType}};
 
     use super::CarState;
 
+    const EDGE_MAX_WEIGHT: f64 = 3.0;
     pub const EDGE_MAX_DIST: f64 = 0.3;
     pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {
         // add weight for being close to the point
-        let max_weight = 3.0;
         let edge_dist = state.pos.dist(point.pos);
 
         // goes from max_weight when at the edge to 0 when at EDGE_MAX_DIST away from edge
-        let weighting = (EDGE_MAX_DIST - edge_dist) / EDGE_MAX_DIST * max_weight;
+        let weighting = (EDGE_MAX_DIST - edge_dist) / EDGE_MAX_DIST * EDGE_MAX_WEIGHT;
         if weighting >= 0.0 {
             weighting
         } else {
@@ -35,32 +37,55 @@ mod distance_calculators {
         }
     }
 
-    pub fn calculate_travel_direction_weight_for_point(state: CarState, point: &Point) -> f64 {
-        // add weight for travelling the wrong angular direction around points
-        // extra for arrow points and none for obstacle points
-        0.0
+    pub fn calculate_angle_change_weight_for_point(state: CarState, arrow: &Point) -> f64 {
+        let max_dist = 1.;
+        if state.pos.dist(arrow.pos) > max_dist {
+            return 0.0;
+        }
+
+        let angle_before = (state.pos - arrow.pos).angle();
+        let angle_after = (state.step_distance(0.1).pos - arrow.pos).angle();
+        let mut angle_diff = angle_after - angle_before;
+        // fix angle wrapping
+        if angle_diff > PI {
+            angle_diff -= 2.0 * PI;
+        }
+        if angle_diff < -PI {
+            angle_diff += 2.0 * PI;
+        }
+
+        let good_direction = if arrow.point_type == PointType::ArrowLeft { -1.0 } else { 1.0 };
+        let unweighted = (angle_diff.signum() == good_direction) as i32 as f64;
+        
+        unweighted * 0.5
     }
 
     pub fn calculate_curvature_weight(state: CarState) -> f64 {
         // add weighting to enourage taking smoother lines
         state.curvature.abs().powf(2.0) * 0.4 * PLAN_STEP_SIZE_METERS
+        // max is 3^2*0.4*0.2 = 0.72
     }
 }
 
 // Calculates the distance/traversability weights used for pathfinding
-fn distance(state: CarState, nearby_points: &Vec<Point>) -> f64 {
+fn distance(state: CarState, obstacle_points: &Vec<Point>, arrow_points: &Vec<Point>) -> f64 {
     puffin::profile_function!();
     let mut total_weight = -PLAN_STEP_SIZE_METERS * 1.0;
 
-    total_weight += nearby_points
-        .iter()
-        .map(|p| distance_calculators::calculate_avoid_edge_weight_for_point(state, p))
-        .reduce(f64::max)
-        .unwrap_or(0.);
+    let closest_avoid_point = obstacle_points.iter().reduce(|accum: &Point, new: &Point| {
+        if new.point_type.is_obstacle() && new.pos.dist(state.pos) < accum.pos.dist(state.pos) {
+            return new;
+        } else {
+            return accum;
+        }
+    });
+    if let Some(point) = closest_avoid_point {
+        total_weight += distance_calculators::calculate_avoid_edge_weight_for_point(state, point);
+    }
 
-    total_weight += nearby_points
+    total_weight += arrow_points
         .iter()
-        .map(|p| distance_calculators::calculate_travel_direction_weight_for_point(state, p))
+        .map(|p| distance_calculators::calculate_angle_change_weight_for_point(state, p))
         .reduce(f64::max)
         .unwrap_or(0.);
 
@@ -176,10 +201,11 @@ impl Planner {
 
             let next_drive_states = get_possible_next_states(current.state);
             let relevant_points = points.get_points_in_area(current.state.pos, EDGE_MAX_DIST);
+            let arrow_points = points.get_arrow_points();
             for next_state in next_drive_states {
                 open_set.push(PathNodeData {
                     state: next_state.step_distance(PLAN_STEP_SIZE_METERS),
-                    distance: current.distance + distance(next_state, &relevant_points),
+                    distance: current.distance + distance(next_state, &relevant_points, &arrow_points),
                     prev: current_rc.clone(),
                     steps: current.steps + 1,
                 })
