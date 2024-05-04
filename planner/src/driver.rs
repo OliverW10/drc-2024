@@ -1,8 +1,5 @@
 use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
-use rppal::{
-    gpio::{Gpio, OutputPin},
-    pwm::{Channel, Polarity, Pwm},
-};
+use rppal::pwm::{Channel, Polarity, Pwm};
 use serial2::{self, SerialPort};
 use std::time::{Duration, Instant};
 
