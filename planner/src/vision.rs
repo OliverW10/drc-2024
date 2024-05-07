@@ -4,12 +4,10 @@ mod mock;
 mod obstacle;
 mod perspective;
 
-use futures::future::join_all;
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
     imgproc::{cvt_color, gaussian_blur, ColorConversionCodes},
 };
-
 use crate::{
     config::colours,
     points::{Point, PointType},
@@ -90,14 +88,6 @@ impl Vision {
             cvt_color(&self.blurred, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
         }
 
-        let futures = self.point_finders.iter_mut().map(|finder| {
-            create_finder_runner(finder.as_mut(), &self.hsv, &state)
-        });
-        join_all(futures);
-        vec![]
+        self.point_finders.iter_mut().flat_map(|finder| finder.get_points(&self.hsv, &state).unwrap()).collect()
     }
-}
-
-async fn create_finder_runner(finder: &mut dyn ObjectFinder, hsv: &Mat, state: &CarState) -> Vec<Point> {
-    finder.get_points(hsv, state).unwrap()
 }
