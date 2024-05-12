@@ -1,6 +1,10 @@
 import cv2
 import time
+import os
  
+if os.path.isfile("video.avi"):
+    raise Exception("file already exists, download it and delete it. `scp pi@raspberrypi.local:~/drc-2024/planner/video.avi ~`")
+
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -8,7 +12,8 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 # TODO: get framerate?
-out = cv2.VideoWriter(f'output{round(time.time())}.avi', fourcc, 60, (640, 480))
+
+out = cv2.VideoWriter(f'video.avi', fourcc, 60, (640, 480))
 
 counter = 0
 since = time.time()

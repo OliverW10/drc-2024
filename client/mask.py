@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
+import sys
 
 
-cap = cv2.VideoCapture(0)
+print(f"opening {sys.argv[1]}")
+cap = cv2.VideoCapture(sys.argv[1])
 
 def nothing(x):
     pass
@@ -22,7 +24,11 @@ cv2.createTrackbar('v lo', 'result',0,255,nothing)
 
 while(1):
 
-    _, frame = cap.read()
+    got_frame, frame = cap.read()
+    if not got_frame:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        print("looped")
+        continue
 
     #converting to HSV
     hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
@@ -46,8 +52,16 @@ while(1):
     cv2.imshow('result',result)
 
     k = cv2.waitKey(5) & 0xFF
-    if k == 27:
+    if k != 255:
         break
+
+h_hi = cv2.getTrackbarPos('h hi','result')
+h_lo = cv2.getTrackbarPos('h lo','result')
+s_hi = cv2.getTrackbarPos('s hi','result')
+s_lo = cv2.getTrackbarPos('s lo','result')
+v_hi = cv2.getTrackbarPos('v hi','result')
+v_lo = cv2.getTrackbarPos('v lo','result')
+print(f"({h_lo}, {s_lo}, {v_lo}), ({h_hi}, {s_hi}, {v_hi})")
 
 cap.release()
 

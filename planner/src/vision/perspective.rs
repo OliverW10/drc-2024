@@ -49,8 +49,8 @@ pub fn perspective_correct(points_ints_in_vec: &Vec<opencv::core::Point2i>) -> V
     let mut result_final = vec![];
     for p in result_mat.iter::<Point2f>().unwrap() {
         result_final.push(Pos {
-            x: p.1.x as f64,
-            y: p.1.y as f64,
+            x: p.1.y as f64,
+            y: p.1.x as f64,
         });
     }
     result_final
