@@ -24,7 +24,7 @@ mod messages {
 
 use camera::{Camera, ImageProvider};
 use comms::{Commander, NetworkComms};
-use driver::{CarCommander, PwmDriver, RelativeStateProvider, SerialDriver};
+use driver::{CarCommander, PwmDriver, RelativeStateProvider, PwmPinNumber};
 use follower::Follower;
 use logging::{AggregateLogger, FileLogger, Logger};
 use messages::{command::CommandMode, diagnostic::Diagnostic, path::SimpleDrive};
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
-    let mut driver = CarCommander::new(Box::new(SerialDriver::new("/dev/ttyACM0")), Box::new(PwmDriver::new()));
+    let mut driver = CarCommander::new(Box::new(PwmDriver::new(PwmPinNumber::Pin12)), Box::new(PwmDriver::new(PwmPinNumber::Pin35)));
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
 

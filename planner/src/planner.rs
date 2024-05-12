@@ -213,13 +213,13 @@ impl Planner {
         }
 
         let all_points = points.get_all_points();
-        println!(
-            "{} points, final path cost: {}, evaluated {} paths in {}ms",
-            all_points.len(),
-            best_path.distance,
-            total_paths,
-            started.elapsed().as_millis(),
-        );
+        // println!(
+        //     "{} points, final path cost: {}, evaluated {} paths in {}ms",
+        //     all_points.len(),
+        //     best_path.distance,
+        //     total_paths,
+        //     started.elapsed().as_millis(),
+        // );
         let final_path = reconstruct_path(best_path);
         draw_map_debug(&all_points, &final_path);
         final_path

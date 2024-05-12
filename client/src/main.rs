@@ -88,7 +88,7 @@ fn main() -> Result<(), eframe::Error> {
                 is_connected = state.last_message_at.elapsed() < CONNECTED_TIMEOUT;
 
                 let latency_ms = state.last_latency.as_secs_f64() * 1000.;
-                ui.label(format!("Latency: {latency_ms}ms"));
+                ui.label(format!("Latency: {latency_ms:.1}ms"));
                 if let Some(diag) = state.last_recieved_diagnostic.diagnostic.clone() {
                     let fps_avg = diag.framerate_avg;
                     let fps_low = diag.framerate_90;

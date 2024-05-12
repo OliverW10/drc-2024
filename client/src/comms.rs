@@ -41,13 +41,17 @@ impl Default for CommsState {
 fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
     let mut count = 0;
     loop {
+        println!("start of loop");
         let ip = {
             let local_state = state.lock().unwrap();
             local_state.ip.clone()
         };
         println!("Trying to connect");
-        match TcpStream::connect(ip) {
-            Ok(connection) => return connection,
+        match TcpStream::connect_timeout(&ip, Duration::from_millis(500)) {
+            Ok(connection) => {
+                println!("Connected");
+                return connection
+            }
             Err(e) => println!(
                 "Connection to {} failed {} times: '{}', retying in 1s",
                 ip,
@@ -56,7 +60,7 @@ fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
             ),
         };
         count += 1;
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(500))
     }
 }
 

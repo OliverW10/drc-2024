@@ -41,19 +41,45 @@ pub trait Steerer {
 }
 
 pub struct PwmDriver {
-    steer_pin: Option<Pwm>,
-    drive_pin: Option<Pwm>,
+    pin: Option<Pwm>,
 }
 
-const ALLOW_NO_GPIO: bool = true;
+pub enum PwmPinNumber {
+    Pin12, Pin35,
+}
+
+impl PwmPinNumber {
+    fn channel(&self) -> Channel {
+        match self {
+            Self::Pin12 => Channel::Pwm0,
+            Self::Pin35 => Channel::Pwm1,
+        }
+    }
+}
+
 impl PwmDriver {
-    pub fn new() -> PwmDriver {
+    pub fn new(channel: PwmPinNumber) -> PwmDriver {
         // https://docs.rs/rppal/latest/rppal/pwm/index.html
-        let steer_pwm = Pwm::with_period(Channel::Pwm0, PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
-        let drive_pwm = Pwm::with_period(Channel::Pwm1, PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
+        let pwm = Pwm::with_period(channel.channel(), PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
+
         PwmDriver {
-            steer_pin: if ALLOW_NO_GPIO { steer_pwm.ok() } else { Some(steer_pwm.unwrap()) },
-            drive_pin: if ALLOW_NO_GPIO { drive_pwm.ok() } else { Some(drive_pwm.unwrap()) },
+            pin: if Self::should_panic_if_no_gpio() { Some(pwm.unwrap()) } else { pwm.ok() },
+        }
+    }
+
+    #[inline]
+    fn should_panic_if_no_gpio() -> bool {
+        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+        {
+            return true;
+        }
+        return false;
+    }
+
+    fn set(&mut self, pulse_width_us: f32) {
+        if let Some(pin) = &mut self.pin {
+            pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
+                .unwrap();
         }
     }
 }
@@ -67,10 +93,8 @@ impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
         let pulse_width_us = STEER_PWM_MIN + t * (STEER_PWM_MAX - STEER_PWM_MIN);
-        if let Some(pin) = &mut self.steer_pin {
-            pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
-                .unwrap();
-        }
+        println!("steering {pulse_width_us}");
+        self.set(pulse_width_us);
     }
 }
 
@@ -91,10 +115,8 @@ const MAX_SPEED: f32 = MAX_SPEED_ESTIMATE;
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
         let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
-        if let Some(pin) = &mut self.drive_pin {
-            pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
-                .unwrap();
-        }
+        println!("driving {pulse_width_us}");
+        self.set(pulse_width_us);
     }
 }
 
