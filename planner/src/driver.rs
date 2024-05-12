@@ -41,35 +41,64 @@ pub trait Steerer {
 }
 
 pub struct PwmDriver {
-    pin: Option<Pwm>,
+    steer_pin: Option<Pwm>,
+    drive_pin: Option<Pwm>,
 }
 
 const ALLOW_NO_GPIO: bool = true;
 impl PwmDriver {
     pub fn new() -> PwmDriver {
         // https://docs.rs/rppal/latest/rppal/pwm/index.html
-        let pwm = Pwm::with_period(Channel::Pwm0, PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
+        let steer_pwm = Pwm::with_period(Channel::Pwm0, PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
+        let drive_pwm = Pwm::with_period(Channel::Pwm1, PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
         PwmDriver {
-            pin: if ALLOW_NO_GPIO { pwm.ok() } else { Some(pwm.unwrap()) },
+            steer_pin: if ALLOW_NO_GPIO { steer_pwm.ok() } else { Some(steer_pwm.unwrap()) },
+            drive_pin: if ALLOW_NO_GPIO { drive_pwm.ok() } else { Some(drive_pwm.unwrap()) },
         }
     }
 }
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
-const PWM_MAX: f32 = 2000.0;
-const PWM_MIN: f32 = 1000.0;
+const STEER_PWM_MAX: f32 = 2000.0;
+const STEER_PWM_MIN: f32 = 1000.0;
 
 const MAX_CURVATURE: f32 = 3.0;
 impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
-        let pulse_width_us = PWM_MIN + t * (PWM_MAX - PWM_MIN);
-        if let Some(pin) = &mut self.pin {
+        let pulse_width_us = STEER_PWM_MIN + t * (STEER_PWM_MAX - STEER_PWM_MIN);
+        if let Some(pin) = &mut self.steer_pin {
             pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
                 .unwrap();
         }
     }
 }
+
+// Rough estimate for MAX_SPEED
+const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
+const GEAR_RATIO: f32 = 1. / 25.;
+const K_V: f32 = 3100.0 / 60.0; // rps / volt unloaded
+const LOSSES: f32 = 0.6;
+const V_BUS: f32 = 3.7 * 4.;
+const MAX_SPEED_ESTIMATE: f32 = K_V * V_BUS * LOSSES * GEAR_RATIO * METERS_PER_ROTATION;
+
+const MAX_DRIVE_PWM: f32 = 2000.0;
+const STOP_DRIVE_PWM: f32 = 1500.0;
+// Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
+// To find experimentally
+const MAX_SPEED: f32 = MAX_SPEED_ESTIMATE;
+
+impl Driver for PwmDriver {
+    fn drive_speed(&mut self, speed: MetersPerSecond) {
+        let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
+        if let Some(pin) = &mut self.drive_pin {
+            pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
+                .unwrap();
+        }
+    }
+}
+
+
 
 pub struct SerialDriver {
     port_file: Option<SerialPort>,
@@ -92,8 +121,6 @@ impl SerialDriver {
     }
 }
 
-const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
-
 impl Driver for SerialDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
         let rps = speed / METERS_PER_ROTATION;
@@ -102,6 +129,7 @@ impl Driver for SerialDriver {
         }
     }
 }
+
 
 pub trait RelativeStateProvider {
     fn get_movement(&self) -> CarState;

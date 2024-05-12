@@ -33,7 +33,7 @@ impl Default for CommsState {
             last_latency: Duration::ZERO,
             last_message_at: Instant::now().checked_sub(CONNECTED_TIMEOUT).unwrap(),
             map: Vec::new(),
-            ip: SocketAddr::from(([127, 0, 0, 1], 3141)),
+            ip: SocketAddr::from(([192, 168, 193, 23], 3141)),
         }
     }
 }
