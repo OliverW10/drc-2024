@@ -1,5 +1,5 @@
 use opencv::{
-    core::{perspective_transform, Mat, MatExprTraitConst, Point2f, CV_32FC2, DECOMP_LU},
+    core::{perspective_transform, Mat, MatExprTraitConst, Point2f, Rect, CV_32FC2, DECOMP_LU},
     imgproc::get_perspective_transform,
 };
 
@@ -48,12 +48,19 @@ pub fn perspective_correct(points_ints_in_vec: &Vec<opencv::core::Point2i>) -> V
 
     let mut result_final = vec![];
     for p in result_mat.iter::<Point2f>().unwrap() {
-        result_final.push(Pos {
-            x: p.1.y as f64,
-            y: p.1.x as f64,
-        });
+        if should_have_point(p.1) {
+            result_final.push(Pos {
+                x: p.1.y as f64,
+                y: p.1.x as f64,
+            });
+        }
     }
     result_final
+}
+
+fn should_have_point(p: opencv::core::Point2f) -> bool{
+    let exclude_rects = Rect {x: 200, y: 360, height: 480-200, width: 640-200};
+    !exclude_rects.contains(opencv::core::Point2i {x:p.x as i32, y:p.y as i32})
 }
 
 pub fn convert_point_relative_to_global(point: Point, car: &CarState) -> Point {

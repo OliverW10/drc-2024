@@ -36,7 +36,7 @@ impl Vision {
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));
 
-        point_finders.push(Box::new(FakePointProvider {}));
+        // point_finders.push(Box::new(FakePointProvider {}));
 
         return Vision {
             point_finders: point_finders,
