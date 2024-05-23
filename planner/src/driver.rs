@@ -85,7 +85,7 @@ impl PwmDriver {
 }
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
-const PWM_RANGE: f32 = 0.3;
+const PWM_RANGE: f32 = 0.5;
 const PWM_CENTER: f32 = 1500.0;
 const STEER_PWM_MAX: f32 = PWM_CENTER + 500.0 * PWM_RANGE;
 const STEER_PWM_MIN: f32 = PWM_CENTER - 500.0 * PWM_RANGE;
