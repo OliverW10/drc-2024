@@ -100,10 +100,10 @@ impl Steerer for PwmDriver {
 
 // Rough estimate for MAX_SPEED
 const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
-const GEAR_RATIO: f32 = 1. / 25.;
+const GEAR_RATIO: f32 = 1. / 5.;
 const K_V: f32 = 3100.0 / 60.0; // rps / volt unloaded
 const LOSSES: f32 = 0.6;
-const V_BUS: f32 = 3.7 * 4.;
+const V_BUS: f32 = 3.7 * 2.;
 const MAX_SPEED_ESTIMATE: f32 = K_V * V_BUS * LOSSES * GEAR_RATIO * METERS_PER_ROTATION;
 
 const MAX_DRIVE_PWM: f32 = 2000.0;

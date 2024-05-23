@@ -23,7 +23,6 @@ impl Camera {
         if !opened {
             panic!("Unable to open default camera!");
         }
-        // cap.set(videoio::CAP_PROP_BUFFERSIZE, 1.0);
         cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0).unwrap();
         cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
         let frame = Mat::default();

@@ -12,16 +12,16 @@ fn get_perspective_matrix() -> Mat {
     puffin::profile_function!();
 
     let perspective_points_image = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f { x: -50., y: 480. },
-        Point2f { x: 50., y: 0. },
-        Point2f { x: 590., y: 0. },
-        Point2f { x: 690., y: 480. },
+        Point2f { x: 259., y: 290. },
+        Point2f { x: 409., y: 290. },
+        Point2f { x: 187., y: 175. },
+        Point2f { x: 389., y: 175. },
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f { x: 0.0, y: 0.5 },
-        Point2f { x: 0.0, y: 0.0 },
-        Point2f { x: 0.5, y: 0.0 },
-        Point2f { x: 0.5, y: 0.5 },
+        Point2f { y: -0.11, x: 0.26 },
+        Point2f { y: 0.11, x: 0.26 },
+        Point2f { y: 0.11, x: 0.56 },
+        Point2f { y: -0.11, x: 0.56 },
     ]);
     get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
 }
