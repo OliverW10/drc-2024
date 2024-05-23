@@ -85,8 +85,10 @@ impl PwmDriver {
 }
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
-const STEER_PWM_MAX: f32 = 2000.0;
-const STEER_PWM_MIN: f32 = 1000.0;
+const PWM_RANGE: f32 = 0.3;
+const PWM_CENTER: f32 = 1500.0;
+const STEER_PWM_MAX: f32 = PWM_CENTER + 500.0 * PWM_RANGE;
+const STEER_PWM_MIN: f32 = PWM_CENTER - 500.0 * PWM_RANGE;
 
 const MAX_CURVATURE: f32 = 3.0;
 impl Steerer for PwmDriver {
@@ -106,11 +108,11 @@ const LOSSES: f32 = 0.6;
 const V_BUS: f32 = 3.7 * 2.;
 const MAX_SPEED_ESTIMATE: f32 = K_V * V_BUS * LOSSES * GEAR_RATIO * METERS_PER_ROTATION;
 
-const MAX_DRIVE_PWM: f32 = 2000.0;
+const MAX_DRIVE_PWM: f32 = 1600.0;
 const STOP_DRIVE_PWM: f32 = 1500.0;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
 // To find experimentally
-const MAX_SPEED: f32 = MAX_SPEED_ESTIMATE;
+const MAX_SPEED: f32 = 0.5;
 
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
