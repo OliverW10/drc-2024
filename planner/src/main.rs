@@ -22,7 +22,7 @@ mod messages {
     }
 }
 
-use camera::{Camera, ImageProvider};
+use camera::Capture;
 use comms::{Commander, NetworkComms};
 use driver::{CarCommander, PwmDriver, RelativeStateProvider, PwmPinNumber};
 use follower::Follower;
@@ -32,12 +32,16 @@ use opencv::Result;
 use planner::Planner;
 use points::{GridPointMap, PointMap, Pos};
 use state::CarState;
-use std::{collections::VecDeque, time::Instant};
+use std::{collections::VecDeque, env, time::Instant};
 use vision::Vision;
 
 fn main() -> Result<()> {
+    let args = env::args().skip(1).collect::<Vec<String>>();
     // Create objects
-    let mut camera = Camera::new();
+    let mut camera = match args.first() {
+        None => Capture::camera(),
+        Some(filename) => Capture::video(filename),
+    };
     let point_map = &mut GridPointMap::new() as &mut dyn PointMap;
     let mut vision = Vision::new();
     let planner = Planner::new();

@@ -18,10 +18,10 @@ fn get_perspective_matrix() -> Mat {
         Point2f { x: 389., y: 175. },
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f { y: -0.11, x: 0.26 },
-        Point2f { y: 0.11, x: 0.26 },
-        Point2f { y: 0.11, x: 0.56 },
-        Point2f { y: -0.11, x: 0.56 },
+        Point2f { x: -0.11, y: 0.26 },
+        Point2f { x: 0.11, y: 0.26 },
+        Point2f { x: 0.11, y: 0.56 },
+        Point2f { x: -0.11, y: 0.56 },
     ]);
     get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap()
 }
