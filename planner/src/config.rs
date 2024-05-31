@@ -14,7 +14,7 @@ pub mod colours {
         ColourRange { low: l, high: h }
     }
     pub const YELLOW_MASK: ColourRange = r(c(34, 39, 168), c(44, 255, 255));
-    pub const BLUE_MASK: ColourRange = r(c(86, 69, 89), c(108, 255, 255));
+    pub const BLUE_MASK: ColourRange = r(c(93, 89, 44), c(107, 255, 255));
     // pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));

@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import cv2
 import numpy as np
 import sys
@@ -48,6 +49,7 @@ while(1):
     mask = cv2.inRange(hsv,lower_blue, upper_blue)
 
     result = cv2.bitwise_and(frame,frame,mask = mask)
+    cv2.rectangle(result,(200,360),(440,480),(0,255,0),3)
 
     cv2.imshow('result',result)
 

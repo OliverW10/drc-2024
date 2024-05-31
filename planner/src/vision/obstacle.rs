@@ -9,7 +9,7 @@ struct ObstacleFinder {
 impl ObstacleFinder {}
 
 impl ObjectFinder for ObstacleFinder {
-    fn get_points(&mut self, _image: &Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, _image: &Mat, _state: &CarState) -> Result<Vec<Point>, opencv::Error> {
         Ok(vec![])
     }
 }

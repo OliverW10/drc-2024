@@ -24,7 +24,7 @@ mod messages {
 
 use camera::Capture;
 use comms::{Commander, NetworkComms};
-use driver::{CarCommander, PwmDriver, RelativeStateProvider, PwmPinNumber};
+use driver::{CarCommander, RelativeStateProvider};
 use follower::Follower;
 use logging::{AggregateLogger, FileLogger, Logger};
 use messages::{command::CommandMode, diagnostic::Diagnostic, path::SimpleDrive};
@@ -46,19 +46,18 @@ fn main() -> Result<()> {
     let mut vision = Vision::new();
     let planner = Planner::new();
     let follower = Follower::new();
-    let mut driver = CarCommander::new(Box::new(PwmDriver::new(PwmPinNumber::Pin12)), Box::new(PwmDriver::new(PwmPinNumber::Pin35)));
+    let mut driver = CarCommander::new();
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
 
     // Initialise state
     let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;
-    current_state.pos = Pos { x: -2.75, y: 2.0 };
-    // current_state.pos = Pos { x: 0.1, y: 0.3 };
+    current_state.pos = Pos { x: 0.0, y: 0.0 };
 
     let mut last_frame = Instant::now();
     let mut frame_times = VecDeque::new();
-    frame_times.push_back(0 as f32);
+    frame_times.push_back(0.0);
 
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();

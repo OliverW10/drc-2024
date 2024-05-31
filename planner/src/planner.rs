@@ -12,7 +12,7 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
 use crate::planner::distance_calculators::EDGE_MAX_DIST;
-use crate::points::{Point, PointMap, PointType, Pos};
+use crate::points::{Point, PointMap, Pos};
 use crate::state::CarState;
 
 mod distance_calculators {
@@ -24,6 +24,8 @@ mod distance_calculators {
 
     const EDGE_MAX_WEIGHT: f64 = 3.0;
     pub const EDGE_MAX_DIST: f64 = 0.3;
+
+    // Weight to make it stay away from the lines
     pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {
         // add weight for being close to the point
         let edge_dist = state.pos.dist(point.pos);
@@ -37,6 +39,8 @@ mod distance_calculators {
         }
     }
 
+    // Weight to make it go in the correct direction around points
+    // e.g. Drive on the correct side of an arrow point or go the correct direction around the track
     pub fn calculate_angle_change_weight_for_point(state: CarState, arrow: &Point) -> f64 {
         let max_dist = 1.;
         if state.pos.dist(arrow.pos) > max_dist {
@@ -60,26 +64,29 @@ mod distance_calculators {
         unweighted * 0.5
     }
 
+    // Weight to make it take paths with smoother/less turning
     pub fn calculate_curvature_weight(state: CarState) -> f64 {
-        // add weighting to enourage taking smoother lines
+        // squared so it takes a long shallow turn rather than a short sharp one
         state.curvature.abs().powf(2.0) * 0.4 * PLAN_STEP_SIZE_METERS
         // max is 3^2*0.4*0.2 = 0.72
     }
 }
 
-// Calculates the distance/traversability weights used for pathfinding
+// Calculates the distance/traversability weights used a single step when doing the pathfinding
 fn distance(state: CarState, obstacle_points: &Vec<Point>, arrow_points: &Vec<Point>) -> f64 {
     puffin::profile_function!();
+    // add a slight negative weight so the search behaves closer to a* than bfs
+    // this does mean it doesn't guarentee the best path but thats ok beacuse it will be much faster
     let mut total_weight = -PLAN_STEP_SIZE_METERS * 1.0;
 
-    let closest_avoid_point = obstacle_points.iter().reduce(|accum: &Point, new: &Point| {
+    let closest_point_to_avoid = obstacle_points.iter().reduce(|accum: &Point, new: &Point| {
         if new.point_type.is_obstacle() && new.pos.dist(state.pos) < accum.pos.dist(state.pos) {
             return new;
         } else {
             return accum;
         }
     });
-    if let Some(point) = closest_avoid_point {
+    if let Some(point) = closest_point_to_avoid {
         total_weight += distance_calculators::calculate_avoid_edge_weight_for_point(state, point);
     }
 
@@ -163,7 +170,8 @@ impl Planner {
     pub fn new() -> Planner {
         Planner {}
     }
-
+    
+    // Runs Dijkstra's for a time budget and return the best path found
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
@@ -187,15 +195,15 @@ impl Planner {
             total_paths += 1;
             let current_rc = Rc::new(PathNode::Node(current.clone()));
 
-            if current.steps > best_path.steps
-                || (current.steps == best_path.steps && current.distance < best_path.distance)
-            {
+            let is_longest_path_so_far = current.steps > best_path.steps;
+            let is_better_than_longest_path = current.steps == best_path.steps && current.distance < best_path.distance;
+            if  is_longest_path_so_far || is_better_than_longest_path {
                 best_path = current.clone();
             }
             if started.elapsed() > time_budget {
                 break;
             }
-            if current.steps > PLAN_MAX_STEPS {
+            if current.steps >= PLAN_MAX_STEPS {
                 continue;
             }
 

@@ -45,6 +45,8 @@ impl Capture {
 
         if !got_frame && self.needs_restarting {
             self.inner.set(CAP_PROP_POS_FRAMES, 0.0).ok()?;
+            println!("restarting video");
+            return self.get_frame();
         }
         
         if display_image_and_get_key(&self.frame) {

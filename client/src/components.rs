@@ -45,7 +45,7 @@ fn in_rect(p: Pos2, r: Rect) -> Pos2 {
 
 pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messages::path::Path) {
     let map_center = Pos2 { x: 0., y: 0. };
-    let map_scale = 1. / 4.; // meters in each direction of origin
+    let map_scale = 1. / 2.; // meters in each direction of origin
     let paint = ui.painter().with_clip_rect(MAP_RECT);
     paint.rect_filled(MAP_RECT, 0., Color32::DARK_GRAY);
 

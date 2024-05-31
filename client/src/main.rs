@@ -50,7 +50,7 @@ fn main() -> Result<(), eframe::Error> {
     start_request_loop(Arc::clone(&state_main));
 
     let mut mode = CommandMode::StateOff;
-    let mut ip_str = "192.168.1.113".to_owned();
+    let mut ip_str = "127.0.0.1".to_owned();
     let mut is_connected = false;
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);
