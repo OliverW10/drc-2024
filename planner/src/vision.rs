@@ -4,14 +4,15 @@ mod mock;
 mod obstacle;
 mod perspective;
 
+use crate::{
+    camera::display_image_and_get_key,
+    config::{colours, image::TOP_CROP},
+    points::{Point, PointType},
+    state::CarState,
+};
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
     imgproc::{cvt_color, gaussian_blur, ColorConversionCodes},
-};
-use crate::{
-    config::colours,
-    points::{Point, PointType},
-    state::CarState,
 };
 
 use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
@@ -52,13 +53,12 @@ impl Vision {
 
         {
             puffin::profile_scope!("crop");
-            let top_crop = 150;
             let size = image.size().unwrap();
             let roi = Rect {
                 x: 0,
-                y: top_crop,
+                y: TOP_CROP,
                 width: size.width,
-                height: size.height - top_crop,
+                height: size.height - TOP_CROP,
             };
             let cropped_result = image.apply_1(roi);
             if let Ok(cropped) = cropped_result {
@@ -67,6 +67,7 @@ impl Vision {
                 println!("Could not crop image, likely an empty image");
                 return Vec::new();
             }
+            // display_image_and_get_key(&self.cropped);
         }
         // am .unwrap'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway
@@ -88,6 +89,9 @@ impl Vision {
             cvt_color(&self.blurred, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
         }
 
-        self.point_finders.iter_mut().flat_map(|finder| finder.get_points(&self.hsv, &state).unwrap()).collect()
+        self.point_finders
+            .iter_mut()
+            .flat_map(|finder| finder.get_points(&self.hsv, &state).unwrap())
+            .collect()
     }
 }

@@ -27,3 +27,31 @@ pub mod plan {
 
     pub const MAX_CURVATURE: f64 = 1.0 / 0.3;
 }
+
+pub mod image {
+    use opencv::core::Rect;
+
+    pub const TOP_CROP: i32 = 20;
+    pub const EXCLUDE_RECT: Rect = Rect {
+        x: 0, //x: 195,
+        y: 360,
+        width: 640, // width: 270,
+        height: 120,
+    };
+}
+
+pub mod display {
+    use super::is_running_on_pi;
+
+    pub const SHOULD_DISPLAY_RAW_VIDEO: bool = true && !is_running_on_pi();
+    pub const SHOULD_DISPLAY_MAP: bool = false && !is_running_on_pi();
+}
+
+#[inline]
+pub const fn is_running_on_pi() -> bool {
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    {
+        return true;
+    }
+    return false;
+}

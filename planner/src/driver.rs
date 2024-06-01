@@ -1,4 +1,4 @@
-use crate::{messages::path::SimpleDrive, points::Pos, state::CarState};
+use crate::{config::is_running_on_pi, messages::path::SimpleDrive, points::Pos, state::CarState};
 use rppal::pwm::{Channel, Polarity, Pwm};
 use serial2::{self, SerialPort};
 use std::time::{Duration, Instant};
@@ -12,7 +12,10 @@ pub struct CarCommander {
 
 impl CarCommander {
     pub fn new() -> CarCommander {
-        CarCommander::new_from_components(Box::new(PwmDriver::new(PwmPinNumber::Pin12)), Box::new(PwmDriver::new(PwmPinNumber::Pin35)))
+        CarCommander::new_from_components(
+            Box::new(PwmDriver::new(PwmPinNumber::Pin12)),
+            Box::new(PwmDriver::new(PwmPinNumber::Pin35)),
+        )
     }
 
     fn new_from_components(driver: Box<dyn Driver>, steerer: Box<dyn Steerer>) -> CarCommander {
@@ -50,7 +53,8 @@ pub struct PwmDriver {
 }
 
 pub enum PwmPinNumber {
-    Pin12, Pin35,
+    Pin12,
+    Pin35,
 }
 
 impl PwmPinNumber {
@@ -68,17 +72,17 @@ impl PwmDriver {
         let pwm = Pwm::with_period(channel.channel(), PWM_PERIOD, Duration::from_micros(1500), Polarity::Normal, true);
 
         PwmDriver {
-            pin: if Self::should_panic_if_no_gpio() { Some(pwm.unwrap()) } else { pwm.ok() },
+            pin: if Self::should_panic_if_no_gpio() {
+                Some(pwm.unwrap())
+            } else {
+                pwm.ok()
+            },
         }
     }
 
     #[inline]
     fn should_panic_if_no_gpio() -> bool {
-        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-        {
-            return true;
-        }
-        return false;
+        is_running_on_pi()
     }
 
     fn set(&mut self, pulse_width_us: f32) {
@@ -127,8 +131,6 @@ impl Driver for PwmDriver {
     }
 }
 
-
-
 pub struct SerialDriver {
     port_file: Option<SerialPort>,
 }
@@ -158,7 +160,6 @@ impl Driver for SerialDriver {
         }
     }
 }
-
 
 pub trait RelativeStateProvider {
     fn get_movement(&self) -> CarState;

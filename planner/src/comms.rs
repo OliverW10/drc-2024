@@ -120,13 +120,19 @@ fn accumulate_diagnostic_map(
     };
 }
 
-fn accumulate_map_update(existing_map_update: &mut messages::path::MapUpdate, _new_map_update: &messages::path::MapUpdate) {
+fn accumulate_map_update(
+    existing_map_update: &mut messages::path::MapUpdate, _new_map_update: &messages::path::MapUpdate,
+) {
     let mut new_map = _new_map_update.clone();
 
     // Handle remove ids that are for points that have not yet been sent
     let mut redundant_ids = Vec::new();
     for id in new_map.removed_ids.iter() {
-        if let Some(index) = existing_map_update.points_added.iter().position(|point| point.id == *id) {
+        if let Some(index) = existing_map_update
+            .points_added
+            .iter()
+            .position(|point| point.id == *id)
+        {
             existing_map_update.points_added.remove(index);
             redundant_ids.push(*id);
         }
@@ -134,7 +140,9 @@ fn accumulate_map_update(existing_map_update: &mut messages::path::MapUpdate, _n
     new_map.removed_ids.retain_mut(|p| !redundant_ids.contains(p));
 
     // Combine remaining adds and removes
-    existing_map_update.points_added.append(&mut new_map.points_added.clone());
+    existing_map_update
+        .points_added
+        .append(&mut new_map.points_added.clone());
     existing_map_update.removed_ids.append(&mut new_map.removed_ids.clone());
 }
 

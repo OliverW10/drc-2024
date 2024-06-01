@@ -18,7 +18,10 @@ use crate::state::CarState;
 mod distance_calculators {
     use std::f64::consts::PI;
 
-    use crate::{config::plan::PLAN_STEP_SIZE_METERS, points::{Point, PointType}};
+    use crate::{
+        config::plan::PLAN_STEP_SIZE_METERS,
+        points::{Point, PointType},
+    };
 
     use super::CarState;
 
@@ -58,9 +61,13 @@ mod distance_calculators {
             angle_diff += 2.0 * PI;
         }
 
-        let good_direction = if arrow.point_type == PointType::ArrowLeft { -1.0 } else { 1.0 };
+        let good_direction = if arrow.point_type == PointType::ArrowLeft {
+            -1.0
+        } else {
+            1.0
+        };
         let unweighted = (angle_diff.signum() == good_direction) as i32 as f64;
-        
+
         unweighted * 0.5
     }
 
@@ -170,7 +177,7 @@ impl Planner {
     pub fn new() -> Planner {
         Planner {}
     }
-    
+
     // Runs Dijkstra's for a time budget and return the best path found
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
@@ -197,7 +204,7 @@ impl Planner {
 
             let is_longest_path_so_far = current.steps > best_path.steps;
             let is_better_than_longest_path = current.steps == best_path.steps && current.distance < best_path.distance;
-            if  is_longest_path_so_far || is_better_than_longest_path {
+            if is_longest_path_so_far || is_better_than_longest_path {
                 best_path = current.clone();
             }
             if started.elapsed() > time_budget {

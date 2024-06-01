@@ -3,11 +3,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use opencv::{
     core::{Mat, MatExprTraitConst, VecN, CV_8UC3},
     highgui,
-    imgproc::circle,
+    imgproc::{circle, line, rectangle},
 };
 
 use crate::{
-    config::plan::PLAN_STEP_SIZE_METERS,
+    config::{
+        display::SHOULD_DISPLAY_MAP,
+        image::{EXCLUDE_RECT, TOP_CROP},
+        plan::PLAN_STEP_SIZE_METERS,
+    },
     planner::{get_possible_next_states, Path},
     points::{Point, PointType, Pos},
     state::CarState,
@@ -25,12 +29,10 @@ fn map_to_img(pos: &Pos) -> opencv::core::Point {
     }
 }
 
-const DISPLAY_MAP: bool = false;
-
 pub fn draw_map_debug(point_map: &Vec<Point>, path: &Path) {
     puffin::profile_function!();
 
-    if !DISPLAY_MAP {
+    if !SHOULD_DISPLAY_MAP {
         return;
     }
 
@@ -131,4 +133,14 @@ fn draw_state_line(img: &mut Mat, start: CarState) {
 
 fn dot(img: &mut Mat, p: &Pos, col: VecN<f64, 4>, n: i32) {
     circle(img, map_to_img(p), n, col, -1, opencv::imgproc::LineTypes::FILLED.into(), 0).unwrap();
+}
+
+pub fn annotate_video(img: &mut Mat) {
+    let white = VecN::<f64, 4> {
+        0: [255., 255., 255., 0.],
+    };
+    let left_pnt = opencv::core::Point { x: 0, y: TOP_CROP };
+    let right_pnt = opencv::core::Point { x: 640, y: TOP_CROP };
+    rectangle(img, EXCLUDE_RECT, white, 3, opencv::imgproc::LineTypes::LINE_8.into(), 0).unwrap();
+    line(img, left_pnt, right_pnt, white, 3, opencv::imgproc::LineTypes::LINE_8.into(), 0).unwrap();
 }

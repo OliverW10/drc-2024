@@ -4,7 +4,7 @@ use opencv::{
     videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_PROP_POS_FRAMES},
 };
 
-const SHOULD_DISPLAY_VIDEO: bool = true;
+use crate::{config::display::SHOULD_DISPLAY_RAW_VIDEO, display::annotate_video};
 
 pub struct Capture {
     inner: videoio::VideoCapture,
@@ -24,7 +24,11 @@ impl Capture {
         cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0).unwrap();
         cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
 
-        Capture { inner: cap, frame: Mat::default(), needs_restarting: false }
+        Capture {
+            inner: cap,
+            frame: Mat::default(),
+            needs_restarting: false,
+        }
     }
 
     pub fn video(filename: &str) -> Capture {
@@ -36,7 +40,11 @@ impl Capture {
             panic!("Unable to open video file!");
         }
 
-        Capture { inner: cap, frame: Mat::default(), needs_restarting: true }
+        Capture {
+            inner: cap,
+            frame: Mat::default(),
+            needs_restarting: true,
+        }
     }
 
     pub fn get_frame(&mut self) -> Option<&Mat> {
@@ -48,24 +56,22 @@ impl Capture {
             println!("restarting video");
             return self.get_frame();
         }
-        
+
         if display_image_and_get_key(&self.frame) {
             return None;
         }
 
-        return if got_frame {
-            Some(&self.frame)
-        } else {
-            None
-        }
+        return if got_frame { Some(&self.frame) } else { None };
     }
 }
 
-fn display_image_and_get_key(frame: &Mat) -> bool {
-    if !SHOULD_DISPLAY_VIDEO {
+pub fn display_image_and_get_key(_frame: &Mat) -> bool {
+    if !SHOULD_DISPLAY_RAW_VIDEO {
         return false;
     }
-
+    // dont want to draw on actual image
+    let mut frame = _frame.clone();
+    annotate_video(&mut frame);
     if frame.size().unwrap().width > 0 {
         highgui::imshow("window", &frame).unwrap();
     }

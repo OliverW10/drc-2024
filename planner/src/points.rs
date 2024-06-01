@@ -210,7 +210,6 @@ impl PointMap for GridPointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
-        
         let top_left = GridIndex::from_pos(
             around
                 + Pos {
@@ -224,8 +223,8 @@ impl PointMap for GridPointMap {
                     x: max_dist,
                     y: max_dist,
                 },
-            );
-            
+        );
+
         let mut result = Vec::new();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
