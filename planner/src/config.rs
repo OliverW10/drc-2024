@@ -1,3 +1,44 @@
+
+pub mod file {
+    use std::{fs, time::SystemTime};
+
+    struct ConfigReader<T> {
+        last_edit_time: SystemTime,
+        filename: String,
+        reader: fn(&str) -> T,
+        last_value: T,
+    }
+
+    impl<T> ConfigReader<T> {
+        pub fn new(filename: &str, reader: fn(&str) -> T) -> ConfigReader<T> {
+            ConfigReader {
+                last_edit_time: Self::get_last_edit_time(filename),
+                filename: filename.to_string(),
+                reader: reader,
+                last_value: Self::read_file(filename, reader),
+            }
+        }
+
+        fn get_last_edit_time(filename: &str) -> SystemTime {
+            fs::metadata(filename)
+                .and_then(|metadata| metadata.modified())
+                .unwrap()
+        }
+
+        pub fn get_value(&mut self) -> &T {
+            if Self::get_last_edit_time(self.filename.as_str()) > self.last_edit_time {
+                self.last_value = Self::read_file(self.filename.as_str(), self.reader);
+            }
+            &self.last_value
+        }
+
+        fn read_file(filename: &str, reader: fn(&str) -> T) -> T{
+            let file_contents = fs::read_to_string(filename).unwrap();
+            reader(file_contents.as_str())
+        }
+    }
+}
+
 pub mod colours {
     use opencv::core::VecN;
 

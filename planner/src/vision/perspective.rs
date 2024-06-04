@@ -13,10 +13,10 @@ fn get_perspective_matrix() -> Mat {
     puffin::profile_function!();
     let top_crop = TOP_CROP as f32;
     let perspective_points_image = opencv::core::Vector::<Point2f>::from_iter(vec![
-        Point2f { x: 249., y: 290. - top_crop}, // Bottom left
-        Point2f { x: 389., y: 290. - top_crop}, // Bottom right
-        Point2f { x: 409., y: 175. - top_crop}, // Top right
-        Point2f { x: 197., y: 175. - top_crop}, // Top left
+        Point2f { x: 180., y: 290. - top_crop}, // Bottom left
+        Point2f { x: 460., y: 290. - top_crop}, // Bottom right
+        Point2f { x: 390., y: 175. - top_crop}, // Top right
+        Point2f { x: 250., y: 175. - top_crop}, // Top left
     ]);
     let perspective_points_ground = opencv::core::Vector::<Point2f>::from_iter(vec![
         Point2f { x: -0.11, y: 0.26 },
