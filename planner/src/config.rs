@@ -2,7 +2,7 @@
 pub mod file {
     use std::{fs, time::SystemTime};
 
-    struct ConfigReader<T> {
+    pub struct ConfigReader<T> {
         last_edit_time: SystemTime,
         filename: String,
         reader: fn(&str) -> T,
@@ -26,13 +26,16 @@ pub mod file {
         }
 
         pub fn get_value(&mut self) -> &T {
-            if Self::get_last_edit_time(self.filename.as_str()) > self.last_edit_time {
+            let new_last_edit_time = Self::get_last_edit_time(self.filename.as_str());
+            if new_last_edit_time > self.last_edit_time {
                 self.last_value = Self::read_file(self.filename.as_str(), self.reader);
+                self.last_edit_time = new_last_edit_time;
             }
             &self.last_value
         }
 
         fn read_file(filename: &str, reader: fn(&str) -> T) -> T{
+            println!("reading file");
             let file_contents = fs::read_to_string(filename).unwrap();
             reader(file_contents.as_str())
         }
@@ -63,7 +66,7 @@ pub mod colours {
 
 pub mod plan {
     pub const PLAN_STEP_SIZE_METERS: f64 = 0.2;
-    pub const PLAN_MAX_LENGTH_METERS: f64 = 4.0;
+    pub const PLAN_MAX_LENGTH_METERS: f64 = 3.0;
     pub const PLAN_MAX_STEPS: u32 = (PLAN_MAX_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
 
     pub const MAX_CURVATURE: f64 = 1.0 / 0.3;

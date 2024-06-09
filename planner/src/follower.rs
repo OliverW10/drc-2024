@@ -16,12 +16,12 @@ impl Follower {
     pub fn command_to_follow_path(&self, path: &Path) -> SimpleDrive {
         puffin::profile_function!();
 
-        let lookahead = 4; // 4 * 
+        let lookahead_count = 4; // 4 * 0.2
         let mut curvature = 0.0;
-        for point in &path.points[..lookahead] {
+        for point in &path.points[..lookahead_count] {
             curvature += point.curvature;
         }
-        curvature /= lookahead as f64;
+        curvature /= lookahead_count as f64;
 
         let result = SimpleDrive {
             curvature: curvature as f32,

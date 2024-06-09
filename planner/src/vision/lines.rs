@@ -7,14 +7,14 @@ use opencv::{
 use rand::Rng;
 
 use crate::{
-    config::colours::ColourRange,
+    config::{colours::ColourRange, file::ConfigReader},
     points::{Point, PointType, Pos},
     pruner::get_line_exiry,
     state::CarState,
     vision::perspective::{convert_point_relative_to_global, perspective_correct},
 };
 
-use super::ObjectFinder;
+use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
 
 // Finds points along the edges of something
 pub struct LineFinder {
@@ -59,7 +59,7 @@ impl LineFinder {
 const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
 
         {
@@ -84,7 +84,7 @@ impl ObjectFinder for LineFinder {
         }
 
         let image_points = self.points_from_contours();
-        let points = perspective_correct(&image_points);
+        let points = perspective_correct(&image_points, config);
         draw_mask_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
 
         let confidence = get_line_exiry();

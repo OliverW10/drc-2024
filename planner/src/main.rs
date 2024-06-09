@@ -24,6 +24,7 @@ mod messages {
 
 use camera::Capture;
 use comms::{Commander, NetworkComms};
+use config::file::ConfigReader;
 use driver::{CarCommander, RelativeStateProvider};
 use follower::Follower;
 use logging::{AggregateLogger, FileLogger, Logger};
@@ -33,7 +34,7 @@ use planner::Planner;
 use points::{GridPointMap, PointMap, Pos};
 use state::CarState;
 use std::{collections::VecDeque, env, time::Instant};
-use vision::Vision;
+use vision::{perspective::get_perspective_points_config, Vision};
 
 fn main() -> Result<()> {
     let args = env::args().skip(1).collect::<Vec<String>>();
@@ -49,6 +50,9 @@ fn main() -> Result<()> {
     let mut driver = CarCommander::new();
     let mut network_comms = NetworkComms::new();
     let mut file_logger = FileLogger::new();
+    // TODO: use file config for more than just perspective
+    let mut perspective_config = ConfigReader::new("config.dat", get_perspective_points_config);
+
 
     // Initialise state
     let mut current_state = CarState::default();
@@ -77,7 +81,7 @@ fn main() -> Result<()> {
 
         let network_command = network_comms.get_latest_message();
 
-        let new_points = vision.get_points_from_image(&frame, current_state);
+        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config);
 
         point_map.add_points(&new_points);
 
@@ -99,10 +103,7 @@ fn main() -> Result<()> {
 
         driver.drive(command);
 
-        AggregateLogger {
-            loggers: vec![&mut network_comms, &mut file_logger],
-        }
-        .send(
+        network_comms.send(
             &path,
             &new_points,
             &point_map.get_last_removed_ids(),
