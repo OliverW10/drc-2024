@@ -1,4 +1,3 @@
-use once_cell::sync::Lazy;
 use opencv::{
     core::{perspective_transform, Mat, MatExprTraitConst, Point2f, CV_32FC2, DECOMP_LU},
     imgproc::get_perspective_transform,

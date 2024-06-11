@@ -74,6 +74,8 @@ impl NetworkComms {
                 }
 
                 {
+                    puffin::profile_scope!("send msg");
+
                     // Send diagnostic update
                     let mut to_send = to_send_mutex.lock().unwrap();
                     let to_send_buf = to_send.encode_length_delimited_to_vec();
@@ -98,25 +100,27 @@ impl NetworkComms {
 
 impl Logger for NetworkComms {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
+        puffin::profile_function!();
+
         let mut to_send = self.to_send.lock().unwrap();
         accumulate_diagnostic_map(&mut to_send, message);
     }
 }
 
 fn accumulate_diagnostic_map(
-    target: &mut messages::diagnostic::FullDiagnostic, new: &messages::diagnostic::FullDiagnostic,
+    existing: &mut messages::diagnostic::FullDiagnostic, new: &messages::diagnostic::FullDiagnostic,
 ) {
     // Replace the diagnostic and path with most recent
-    target.diagnostic = new.diagnostic.clone();
-    target.path = new.path.clone();
+    existing.diagnostic = new.diagnostic.clone();
+    existing.path = new.path.clone();
     // Accumulate map updates
-    target.map_update = match (&mut target.map_update, &new.map_update) {
+    existing.map_update = match (&mut existing.map_update, &new.map_update) {
         (None, _) => new.map_update.clone(),
         (Some(old_map), Some(new_map)) => {
             accumulate_map_update(old_map, new_map);
-            target.map_update.clone() // TODO: avoid clone
+            existing.map_update.clone() // TODO: avoid clone
         }
-        (Some(_), None) => target.map_update.clone(),
+        (Some(_), None) => existing.map_update.clone(),
     };
 }
 
@@ -154,6 +158,8 @@ const COMMAND_TIMEOUT: Duration = Duration::from_millis(200);
 
 impl Commander for NetworkComms {
     fn get_latest_message(&self) -> messages::command::DriveCommand {
+        puffin::profile_function!();
+
         {
             let last_recived_at_local = self.recived_at.lock().unwrap();
 

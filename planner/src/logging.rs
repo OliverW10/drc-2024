@@ -12,6 +12,8 @@ pub trait Logger {
         &mut self, path: &planner::Path, new_points: &Vec<points::Point>, removed_points: &Vec<u32>,
         diagnostic: &messages::diagnostic::Diagnostic,
     ) {
+        puffin::profile_function!();
+
         let path_dto = Some(messages::path::Path {
             point_interval: PLAN_STEP_SIZE_METERS as f32,
             points: path

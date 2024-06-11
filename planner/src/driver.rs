@@ -27,6 +27,8 @@ impl CarCommander {
     }
 
     pub fn drive(&mut self, command: SimpleDrive) {
+        puffin::profile_function!();
+
         self.driver.drive_speed(command.speed);
         self.steerer.drive_steer(command.curvature);
         self.state_provider.set_command(command);
@@ -173,6 +175,8 @@ struct BlindRelativeStateProvider {
 
 impl RelativeStateProvider for BlindRelativeStateProvider {
     fn get_movement(&self) -> CarState {
+        puffin::profile_function!();
+
         let result = CarState {
             pos: Pos { x: 0., y: 0. },
             angle: 0.,

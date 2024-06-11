@@ -9,6 +9,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 use std::{cmp::Ordering, collections::BinaryHeap};
 
+use crate::config::is_running_on_pi;
 use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::display::draw_map_debug;
 use crate::planner::distance_calculators::EDGE_MAX_DIST;
@@ -26,7 +27,7 @@ mod distance_calculators {
     use super::CarState;
 
     const EDGE_MAX_WEIGHT: f64 = 3.0;
-    pub const EDGE_MAX_DIST: f64 = 0.3;
+    pub const EDGE_MAX_DIST: f64 = 0.25;
 
     // Weight to make it stay away from the lines
     pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {
@@ -182,7 +183,7 @@ impl Planner {
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
-        let time_budget = Duration::from_millis(30);
+        let time_budget = if is_running_on_pi() { Duration::from_millis(30) } else { Duration::from_millis(5) };
         let started = Instant::now();
 
         let starting_node = PathNodeData {
@@ -217,9 +218,10 @@ impl Planner {
             let next_drive_states = get_possible_next_states(current.state);
             let relevant_points = points.get_points_in_area(current.state.pos, EDGE_MAX_DIST);
             let arrow_points = points.get_arrow_points();
-            for next_state in next_drive_states {
+            for next_state_before in next_drive_states {
+                let next_state = next_state_before.step_distance(PLAN_STEP_SIZE_METERS);
                 open_set.push(PathNodeData {
-                    state: next_state.step_distance(PLAN_STEP_SIZE_METERS),
+                    state: next_state,
                     distance: current.distance + distance(next_state, &relevant_points, &arrow_points),
                     prev: current_rc.clone(),
                     steps: current.steps + 1,

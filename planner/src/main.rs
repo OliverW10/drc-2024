@@ -49,7 +49,6 @@ fn main() -> Result<()> {
     let follower = Follower::new();
     let mut driver = CarCommander::new();
     let mut network_comms = NetworkComms::new();
-    let mut file_logger = FileLogger::new();
     // TODO: use file config for more than just perspective
     let mut perspective_config = ConfigReader::new("config.dat", get_perspective_points_config);
 
@@ -66,7 +65,7 @@ fn main() -> Result<()> {
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
     println!("Run this to view profiling data:  puffin_viewer --url {server_addr}");
-    puffin::set_scopes_on(false);
+    puffin::set_scopes_on(true);
 
     loop {
         puffin::GlobalProfiler::lock().new_frame();
@@ -119,6 +118,8 @@ fn main() -> Result<()> {
 }
 
 fn get_diagnostic(frame_times: &VecDeque<f32>, state: CarState) -> Diagnostic {
+    puffin::profile_function!();
+
     let frametime_avg = frame_times.clone().iter().sum::<f32>() / frame_times.len() as f32;
     let frametime_max = frame_times.clone().into_iter().reduce(f32::max).unwrap();
     Diagnostic {

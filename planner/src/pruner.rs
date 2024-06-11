@@ -11,6 +11,7 @@ pub fn old_points_predicate() -> impl Fn(&Point) -> bool {
 fn should_keep_point(now: Duration, point: &Point) -> bool {
     // may want to have this be smarter about discarding points that are behind the car sooner
     // and ones that may still be useful for later
+    // TODO: add some jitter and weight based on number of nearby points
     point.expire_at > now.as_secs_f64()
 }
 

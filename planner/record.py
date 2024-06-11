@@ -9,11 +9,10 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-# Define the codec and create VideoWriter object
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-# TODO: get framerate?
 
-out = cv2.VideoWriter(f'video.avi', fourcc, 60, (640, 480))
+fps = cap.get(cv2.CAP_PROP_FPS)
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter(f'video.avi', fourcc, fps, (640, 480))
 
 counter = 0
 since = time.time()
