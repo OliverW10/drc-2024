@@ -15,10 +15,10 @@ fn should_keep_point(now: Duration, point: &Point) -> bool {
 }
 
 fn rescale(x: f32, from_min: f32, from_max: f32, to_min: f32, to_max: f32) -> f32 {
-    let from_range = from_max-from_min;
-    let to_range = to_max-to_min;
+    let from_range = from_max - from_min;
+    let to_range = to_max - to_min;
     let t = (x - from_min) / from_range;
-    t * to_range + to_min
+    (t * to_range + to_min).max(to_min).min(to_max)
 }
 
 // Get the value the line finder will set expire_at to for new points

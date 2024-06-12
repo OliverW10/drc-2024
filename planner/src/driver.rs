@@ -106,7 +106,6 @@ impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
         let pulse_width_us = STEER_PWM_MIN + t * (STEER_PWM_MAX - STEER_PWM_MIN);
-        println!("steering {pulse_width_us}");
         self.set(pulse_width_us);
     }
 }
@@ -128,7 +127,6 @@ const MAX_SPEED: f32 = 0.5;
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
         let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
-        println!("driving {pulse_width_us}");
         self.set(pulse_width_us);
     }
 }

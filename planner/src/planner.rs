@@ -11,7 +11,6 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use crate::config::is_running_on_pi;
 use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
-use crate::planner::distance_calculators::EDGE_MAX_DIST;
 use crate::points::{Point, PointMap, Pos};
 use crate::state::CarState;
 
@@ -77,24 +76,19 @@ mod distance_calculators {
         state.curvature.abs().powf(2.0) * 0.4 * PLAN_STEP_SIZE_METERS
         // max is 3^2*0.4*0.2 = 0.72
     }
+
+    // TODO: add weight for begin within ideal distance of nearest point
 }
 
 // Calculates the distance/traversability weights used a single step when doing the pathfinding
-fn distance(state: CarState, obstacle_points: &Vec<Point>, arrow_points: &Vec<Point>) -> f64 {
+fn distance(state: CarState, closest_point_to_avoid: Option<Point>, arrow_points: &Vec<Point>) -> f64 {
     puffin::profile_function!();
     // add a slight negative weight so the search behaves closer to a* than bfs
     // this does mean it doesn't guarentee the best path but thats ok beacuse it will be much faster
     let mut total_weight = -PLAN_STEP_SIZE_METERS * 1.0;
 
-    let closest_point_to_avoid = obstacle_points.iter().reduce(|accum: &Point, new: &Point| {
-        if new.point_type.is_obstacle() && new.pos.dist(state.pos) < accum.pos.dist(state.pos) {
-            return new;
-        } else {
-            return accum;
-        }
-    });
     if let Some(point) = closest_point_to_avoid {
-        total_weight += distance_calculators::calculate_avoid_edge_weight_for_point(state, point);
+        total_weight += distance_calculators::calculate_avoid_edge_weight_for_point(state, &point);
     }
 
     total_weight += arrow_points
@@ -182,7 +176,11 @@ impl Planner {
     pub fn find_path(&self, start_state: CarState, points: &dyn PointMap) -> Path {
         puffin::profile_function!();
 
-        let time_budget = if is_running_on_pi() { Duration::from_millis(30) } else { Duration::from_millis(5) };
+        let time_budget = if is_running_on_pi() {
+            Duration::from_millis(30)
+        } else {
+            Duration::from_millis(5)
+        };
         let started = Instant::now();
 
         let starting_node = PathNodeData {
@@ -215,13 +213,13 @@ impl Planner {
             }
 
             let next_drive_states = get_possible_next_states(current.state);
-            let relevant_points = points.get_points_in_area(current.state.pos, EDGE_MAX_DIST);
             let arrow_points = points.get_arrow_points();
             for next_state_before in next_drive_states {
+                let relevant_points = points.get_nearest_point(current.state.pos);
                 let next_state = next_state_before.step_distance(PLAN_STEP_SIZE_METERS);
                 open_set.push(PathNodeData {
                     state: next_state,
-                    distance: current.distance + distance(next_state, &relevant_points, &arrow_points),
+                    distance: current.distance + distance(next_state, relevant_points, &arrow_points),
                     prev: current_rc.clone(),
                     steps: current.steps + 1,
                 })

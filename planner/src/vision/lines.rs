@@ -59,7 +59,10 @@ impl LineFinder {
 const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>, point_map: &dyn PointMap) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(
+        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        point_map: &dyn PointMap,
+    ) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
 
         {
@@ -90,7 +93,10 @@ impl ObjectFinder for LineFinder {
         Ok(points
             .iter()
             .map(|p| {
-                let pos = Pos { x: p.x as f64, y: p.y as f64 };
+                let pos = Pos {
+                    x: p.x as f64,
+                    y: p.y as f64,
+                };
                 let confidence = get_point_expiry(pos, point_map);
                 convert_point_relative_to_global(
                     Point {

@@ -1,4 +1,3 @@
-
 pub mod file {
     use std::{fs, time::SystemTime};
 
@@ -20,9 +19,7 @@ pub mod file {
         }
 
         fn get_last_edit_time(filename: &str) -> SystemTime {
-            fs::metadata(filename)
-                .and_then(|metadata| metadata.modified())
-                .unwrap()
+            fs::metadata(filename).and_then(|metadata| metadata.modified()).unwrap()
         }
 
         pub fn get_value(&mut self) -> &T {
@@ -34,7 +31,7 @@ pub mod file {
             &self.last_value
         }
 
-        fn read_file(filename: &str, reader: fn(&str) -> T) -> T{
+        fn read_file(filename: &str, reader: fn(&str) -> T) -> T {
             println!("reading file");
             let file_contents = fs::read_to_string(filename).unwrap();
             reader(file_contents.as_str())

@@ -99,6 +99,7 @@ fn main() -> Result<(), eframe::Error> {
                     ui.label(format!("-"));
                 }
                 ui.label(format!("Client fps: {:.2}", 1.0 / delta_time.as_secs_f32()));
+                ui.label(format!("Points: {}", state.map.len()));
             }
         });
         ctx.request_repaint();

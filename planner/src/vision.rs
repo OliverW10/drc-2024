@@ -19,11 +19,8 @@ use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
 
 pub trait ObjectFinder {
     fn get_points(
-        &mut self,
-        image: &opencv::core::Mat,
-        state: &CarState,
-        config: &mut ConfigReader<PerspectiveTransformPoints>,
-        point_map: &dyn PointMap
+        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        point_map: &dyn PointMap,
     ) -> Result<Vec<Point>, opencv::Error>;
 }
 
@@ -54,7 +51,10 @@ impl Vision {
     }
 
     // Runs all the vision modules that give their output in map points
-    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>, point_map: &dyn PointMap) -> Vec<Point> {
+    pub fn get_points_from_image(
+        &mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        point_map: &dyn PointMap,
+    ) -> Vec<Point> {
         puffin::profile_function!();
 
         {

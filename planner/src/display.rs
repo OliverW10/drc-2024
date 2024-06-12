@@ -1,9 +1,8 @@
+use crate::config::image::{EXCLUDE_RECT, TOP_CROP};
 use opencv::{
     core::{Mat, VecN},
     imgproc::{line, rectangle},
 };
-use crate::config::image::{EXCLUDE_RECT, TOP_CROP};
-
 
 pub fn annotate_video(img: &mut Mat) {
     let white = VecN::<f64, 4> {

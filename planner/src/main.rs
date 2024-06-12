@@ -52,7 +52,6 @@ fn main() -> Result<()> {
     // TODO: use file config for more than just perspective
     let mut perspective_config = ConfigReader::new("config.dat", get_perspective_points_config);
 
-
     // Initialise state
     let mut current_state = CarState::default();
     current_state.angle = -3.141 / 2.;

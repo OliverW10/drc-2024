@@ -103,14 +103,13 @@ pub struct Point {
 }
 
 pub trait PointMap {
-    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point>;
+    fn get_nearest_point(&self, around: Pos) -> Option<Point>;
     fn get_count_in_area(&self, around: Pos) -> u32;
     fn get_arrow_points(&self) -> Vec<Point>;
     fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
     fn get_last_removed_ids(&mut self) -> Vec<PointID>;
 }
-
 
 const GRID_SIZE: f64 = 0.2;
 
@@ -143,16 +142,8 @@ impl GridPointMap {
             removed_ids: Vec::new(),
         }
     }
-}
-
-impl PointMap for GridPointMap {
-    fn get_count_in_area(&self, around: Pos) -> u32 {
-        return self.grid.get(&GridIndex::from_pos(around)).map_or(0, |x| x.len() as u32);
-    }
 
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
-        puffin::profile_function!();
-
         let top_left = GridIndex::from_pos(
             around
                 + Pos {
@@ -167,7 +158,7 @@ impl PointMap for GridPointMap {
                     y: max_dist,
                 },
         );
-
+    
         let mut result = Vec::new();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
@@ -183,6 +174,35 @@ impl PointMap for GridPointMap {
         }
         result
     }
+}
+
+impl PointMap for GridPointMap {
+    fn get_nearest_point(&self, around: Pos) -> Option<Point> {
+        puffin::profile_function!();
+        for grid_squares in 1..5 {
+            let dist = grid_squares as f64 * GRID_SIZE;
+            let points = self.get_points_in_area(around, dist);
+            let nearest = points.iter().reduce(|accum: &Point, new: &Point| {
+                if new.point_type.is_obstacle() && new.pos.dist(around) < accum.pos.dist(around) {
+                    return new;
+                } else {
+                    return accum;
+                }
+            });
+            if nearest.is_some() {
+                return nearest.cloned();
+            } 
+        }
+        None
+    }
+
+    fn get_count_in_area(&self, around: Pos) -> u32 {
+        return self
+            .grid
+            .get(&GridIndex::from_pos(around))
+            .map_or(0, |x| x.len() as u32);
+    }
+
 
     fn get_arrow_points(&self) -> Vec<Point> {
         self.arrow_points.clone()
