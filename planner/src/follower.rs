@@ -1,11 +1,5 @@
 use crate::{messages::path::SimpleDrive, planner::Path};
 
-// Currently this is finding a point x meters ahead on the path and pointing the steering at that,
-// an alternate approach would be to just use the curvature of the first planned path segment
-// however, I think this will perform better as it gives it a bit of a low pass, and will start turning earlier
-
-// In the future I can also make the speed dependent on the curvature at some, further, distance ahead.
-
 pub struct Follower {}
 
 impl Follower {

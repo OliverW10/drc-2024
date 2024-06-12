@@ -6,7 +6,7 @@ pub mod perspective;
 
 use crate::{
     config::{colours, file::ConfigReader, image::TOP_CROP},
-    points::{Point, PointType},
+    points::{Point, PointMap, PointType},
     state::CarState,
 };
 use opencv::{
@@ -18,7 +18,13 @@ use perspective::PerspectiveTransformPoints;
 use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
 
 pub trait ObjectFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>) -> Result<Vec<Point>, opencv::Error>;
+    fn get_points(
+        &mut self,
+        image: &opencv::core::Mat,
+        state: &CarState,
+        config: &mut ConfigReader<PerspectiveTransformPoints>,
+        point_map: &dyn PointMap
+    ) -> Result<Vec<Point>, opencv::Error>;
 }
 
 pub struct Vision {
@@ -48,7 +54,7 @@ impl Vision {
     }
 
     // Runs all the vision modules that give their output in map points
-    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>) -> Vec<Point> {
+    pub fn get_points_from_image(&mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>, point_map: &dyn PointMap) -> Vec<Point> {
         puffin::profile_function!();
 
         {
@@ -91,7 +97,7 @@ impl Vision {
 
         self.point_finders
             .iter_mut()
-            .flat_map(|finder| finder.get_points(&self.hsv, &state, config).unwrap())
+            .flat_map(|finder| finder.get_points(&self.hsv, &state, config, point_map).unwrap())
             .collect()
     }
 }

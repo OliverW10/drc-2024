@@ -88,7 +88,6 @@ pub mod display {
     use super::is_running_on_pi;
 
     pub const SHOULD_DISPLAY_RAW_VIDEO: bool = false && !is_running_on_pi();
-    pub const SHOULD_DISPLAY_MAP: bool = false && !is_running_on_pi();
 }
 
 #[inline]

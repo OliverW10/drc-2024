@@ -1,4 +1,4 @@
-use crate::{config::file::ConfigReader, points::Point, state::CarState, vision::ObjectFinder};
+use crate::{config::file::ConfigReader, points::{Point, PointMap}, state::CarState, vision::ObjectFinder};
 use opencv::core::Mat;
 
 use super::perspective::PerspectiveTransformPoints;
@@ -11,7 +11,7 @@ struct ObstacleFinder {
 impl ObstacleFinder {}
 
 impl ObjectFinder for ObstacleFinder {
-    fn get_points(&mut self, _image: &Mat, _state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, _image: &Mat, _state: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>, _: &dyn PointMap) -> Result<Vec<Point>, opencv::Error> {
         Ok(vec![])
     }
 }

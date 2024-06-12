@@ -1,5 +1,5 @@
 use crate::{
-    config::file::ConfigReader, points::{Point, PointType, Pos}, pruner::get_line_exiry, state::CarState
+    config::file::ConfigReader, points::{Point, PointMap, PointType, Pos}, pruner::get_point_expiry, state::CarState
 };
 
 use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
@@ -19,7 +19,7 @@ fn jitter() -> Pos {
 }
 
 impl ObjectFinder for FakePointProvider {
-    fn get_points(&mut self, _: &opencv::core::Mat, _: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, _: &opencv::core::Mat, _: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>, point_map: &dyn PointMap) -> Result<Vec<Point>, opencv::Error> {
         let all_lines = vec![
             Lines {
                 point_type: PointType::LeftLine,
@@ -43,17 +43,16 @@ impl ObjectFinder for FakePointProvider {
             },
         ];
 
-        let expiry = get_line_exiry();
         let mut points = vec![
             Point {
                 id: rand::random(),
-                expire_at: expiry,
+                expire_at: get_point_expiry(Pos { x: -2.75, y: 0.0 }, point_map),
                 pos: Pos { x: -2.75, y: 0.0 },
                 point_type: PointType::ArrowLeft,
             },
             Point {
                 id: rand::random(),
-                expire_at: expiry,
+                expire_at: get_point_expiry(Pos { x: -2.75, y: -2.5 }, point_map),
                 pos: Pos { x: -2.75, y: -2.5 },
                 point_type: PointType::ArrowRight,
             },
@@ -62,11 +61,12 @@ impl ObjectFinder for FakePointProvider {
             for line in lines_of_type.lines {
                 let line_dist = line[0].dist(line[1]);
                 for _ in 0..10 {
+                    let pos = line[0].dist_along(line[1], rand::random::<f64>() * line_dist) + jitter();
                     points.push(Point {
                         id: rand::random(),
-                        expire_at: expiry,
+                        expire_at: get_point_expiry(pos, point_map),
                         point_type: lines_of_type.point_type,
-                        pos: line[0].dist_along(line[1], rand::random::<f64>() * line_dist) + jitter(),
+                        pos
                     });
                 }
             }

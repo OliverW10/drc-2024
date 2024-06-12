@@ -11,7 +11,6 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use crate::config::is_running_on_pi;
 use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
-use crate::display::draw_map_debug;
 use crate::planner::distance_calculators::EDGE_MAX_DIST;
 use crate::points::{Point, PointMap, Pos};
 use crate::state::CarState;
@@ -229,16 +228,13 @@ impl Planner {
             }
         }
 
-        let all_points = points.get_all_points();
         // println!(
-        //     "{} points, final path cost: {}, evaluated {} paths in {}ms",
-        //     all_points.len(),
+        //     "final path cost: {}, evaluated {} paths in {}ms",
         //     best_path.distance,
         //     total_paths,
         //     started.elapsed().as_millis(),
         // );
         let final_path = reconstruct_path(best_path);
-        draw_map_debug(&all_points, &final_path);
         final_path
     }
 }

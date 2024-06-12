@@ -27,7 +27,7 @@ use comms::{Commander, NetworkComms};
 use config::file::ConfigReader;
 use driver::{CarCommander, RelativeStateProvider};
 use follower::Follower;
-use logging::{AggregateLogger, FileLogger, Logger};
+use logging::Logger;
 use messages::{command::CommandMode, diagnostic::Diagnostic, path::SimpleDrive};
 use opencv::Result;
 use planner::Planner;
@@ -80,11 +80,11 @@ fn main() -> Result<()> {
 
         let network_command = network_comms.get_latest_message();
 
-        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config);
+        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config, point_map);
 
         point_map.add_points(&new_points);
 
-        point_map.remove(&pruner::old_points_predicate());
+        point_map.remove(&pruner::points_predicate());
 
         let path = planner.find_path(current_state, point_map);
 

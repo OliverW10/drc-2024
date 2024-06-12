@@ -83,7 +83,7 @@ impl Display for PointType {
 }
 
 impl PointType {
-    pub fn is_arrow(&self) -> bool {
+    pub fn _is_arrow(&self) -> bool {
         *self == PointType::ArrowLeft || *self == PointType::ArrowRight
     }
 
@@ -104,74 +104,13 @@ pub struct Point {
 
 pub trait PointMap {
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point>;
+    fn get_count_in_area(&self, around: Pos) -> u32;
     fn get_arrow_points(&self) -> Vec<Point>;
-    fn get_all_points(&self) -> Vec<Point>;
     fn add_points(&mut self, points: &Vec<Point>);
     fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool);
     fn get_last_removed_ids(&mut self) -> Vec<PointID>;
 }
 
-pub struct SimplePointMap {
-    all_points: Vec<Point>,
-    removed_ids: Vec<u32>,
-}
-
-impl SimplePointMap {
-    pub fn _new() -> SimplePointMap {
-        SimplePointMap {
-            all_points: Vec::new(),
-            removed_ids: Vec::new(),
-        }
-    }
-}
-
-impl PointMap for SimplePointMap {
-    fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
-        puffin::profile_function!();
-
-        self.all_points
-            .iter()
-            .filter(|point| point.pos.dist(around) < max_dist && point.point_type.is_obstacle())
-            .map(|p| p.clone())
-            .collect()
-    }
-
-    fn get_arrow_points(&self) -> Vec<Point> {
-        puffin::profile_function!();
-
-        self.all_points
-            .iter()
-            .filter(|point| point.point_type.is_arrow())
-            .map(|p| p.clone())
-            .collect()
-    }
-
-    fn add_points(&mut self, points: &Vec<Point>) {
-        puffin::profile_function!();
-        self.all_points.append(&mut points.clone());
-    }
-
-    fn remove(&mut self, predicate: &dyn Fn(&Point) -> bool) {
-        puffin::profile_function!();
-        self.all_points.retain(|item| {
-            if predicate(item) {
-                true
-            } else {
-                self.removed_ids.push(item.id);
-                false
-            }
-        });
-    }
-
-    fn get_last_removed_ids(&mut self) -> Vec<u32> {
-        puffin::profile_function!();
-        self.removed_ids.drain(..).collect()
-    }
-
-    fn get_all_points(&self) -> Vec<Point> {
-        self.all_points.clone()
-    }
-}
 
 const GRID_SIZE: f64 = 0.2;
 
@@ -207,6 +146,10 @@ impl GridPointMap {
 }
 
 impl PointMap for GridPointMap {
+    fn get_count_in_area(&self, around: Pos) -> u32 {
+        return self.grid.get(&GridIndex::from_pos(around)).map_or(0, |x| x.len() as u32);
+    }
+
     fn get_points_in_area(&self, around: Pos, max_dist: f64) -> Vec<Point> {
         puffin::profile_function!();
 
@@ -228,15 +171,13 @@ impl PointMap for GridPointMap {
         let mut result = Vec::new();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
-                let key = GridIndex { x, y };
-                if let Some(points) = self.grid.get(&key) {
-                    result.append(
-                        &mut points
-                            .iter()
-                            .filter(|point| point.pos.dist(around) < max_dist)
-                            .map(|p| p.clone())
-                            .collect(),
-                    );
+                if let Some(points) = self.grid.get(&GridIndex { x, y }) {
+                    let mut points = points
+                        .iter()
+                        .filter(|point| point.pos.dist(around) < max_dist)
+                        .map(|p| p.clone())
+                        .collect();
+                    result.append(&mut points);
                 }
             }
         }
@@ -275,15 +216,6 @@ impl PointMap for GridPointMap {
 
     fn get_last_removed_ids(&mut self) -> Vec<u32> {
         self.removed_ids.drain(..).collect()
-    }
-
-    fn get_all_points(&self) -> Vec<Point> {
-        let mut result = Vec::new();
-        for bucket in self.grid.values() {
-            result.append(&mut bucket.clone());
-        }
-        result.append(&mut self.arrow_points.clone());
-        result
     }
 }
 

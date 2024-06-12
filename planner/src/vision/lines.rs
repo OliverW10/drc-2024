@@ -8,8 +8,8 @@ use rand::Rng;
 
 use crate::{
     config::{colours::ColourRange, file::ConfigReader},
-    points::{Point, PointType, Pos},
-    pruner::get_line_exiry,
+    points::{Point, PointMap, PointType, Pos},
+    pruner::get_point_expiry,
     state::CarState,
     vision::perspective::{convert_point_relative_to_global, perspective_correct},
 };
@@ -59,7 +59,7 @@ impl LineFinder {
 const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
-    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>) -> Result<Vec<Point>, opencv::Error> {
+    fn get_points(&mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>, point_map: &dyn PointMap) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
 
         {
@@ -87,16 +87,14 @@ impl ObjectFinder for LineFinder {
         let points = perspective_correct(&image_points, config);
         draw_mask_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
 
-        let confidence = get_line_exiry();
         Ok(points
             .iter()
             .map(|p| {
+                let pos = Pos { x: p.x as f64, y: p.y as f64 };
+                let confidence = get_point_expiry(pos, point_map);
                 convert_point_relative_to_global(
                     Point {
-                        pos: Pos {
-                            x: p.x as f64,
-                            y: p.y as f64,
-                        },
+                        pos,
                         expire_at: confidence,
                         point_type: self.line_type,
                         id: rand::random(),
