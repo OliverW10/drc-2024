@@ -52,6 +52,7 @@ pub trait Steerer {
 
 pub struct PwmDriver {
     pin: Option<Pwm>,
+    enabled: bool,
 }
 
 pub enum PwmPinNumber {
@@ -79,6 +80,7 @@ impl PwmDriver {
             } else {
                 pwm.ok()
             },
+            enabled: false,
         }
     }
 
@@ -89,8 +91,21 @@ impl PwmDriver {
 
     fn set(&mut self, pulse_width_us: f32) {
         if let Some(pin) = &mut self.pin {
+            if !self.enabled {
+                pin.enable().unwrap();
+                self.enabled = true;
+            }
             pin.set_pulse_width(Duration::from_micros(pulse_width_us as u64))
                 .unwrap();
+        }
+    }
+
+    fn stop(&mut self) {
+        if let Some(pin) = &mut self.pin {
+            if self.enabled {
+                pin.disable().unwrap();
+                self.enabled = false;
+            }
         }
     }
 }
@@ -126,8 +141,12 @@ const MAX_SPEED: f32 = 0.5;
 
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
-        let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
-        self.set(pulse_width_us);
+        if speed.abs() < 0.05 {
+            self.stop();
+        } else {
+            let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
+            self.set(pulse_width_us);
+        }
     }
 }
 
