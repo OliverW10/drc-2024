@@ -110,6 +110,12 @@ impl PwmDriver {
     }
 }
 
+impl Drop for PwmDriver {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
 const PWM_PERIOD: Duration = Duration::from_millis(20);
 const PWM_RANGE: f32 = 0.5;
 const PWM_CENTER: f32 = 1500.0;
