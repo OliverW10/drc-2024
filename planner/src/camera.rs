@@ -33,12 +33,13 @@ impl Capture {
 
     pub fn video(filename: &str) -> Capture {
         println!("Opening file {}", filename);
-        let cap = videoio::VideoCapture::from_file_def(filename).unwrap();
+        let mut cap = videoio::VideoCapture::from_file_def(filename).unwrap();
 
         let opened = videoio::VideoCapture::is_opened(&cap).unwrap();
         if !opened {
             panic!("Unable to open video file!");
         }
+        cap.set(videoio::CAP_PROP_FPS, 60.0).unwrap();
 
         Capture {
             inner: cap,
@@ -76,7 +77,7 @@ pub fn display_image_and_get_key(_frame: &Mat) -> bool {
         highgui::imshow("window", &frame).unwrap();
     }
 
-    let key = highgui::wait_key(10).unwrap();
+    let key = highgui::wait_key(25).unwrap();
     if key > 0 && key != 255 {
         println!("Got key press {key}");
         return true;

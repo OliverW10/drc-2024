@@ -21,6 +21,7 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
+    env,
 };
 
 impl ToString for CommandMode {
@@ -50,7 +51,11 @@ fn main() -> Result<(), eframe::Error> {
     start_request_loop(Arc::clone(&state_main));
 
     let mut mode = CommandMode::StateOff;
-    let mut ip_str = "192.168.241.23".to_owned();
+    let args = env::args().skip(1).collect::<Vec<String>>();
+    let mut ip_str = match args.first() {
+        None => "192.168.155.23".to_owned(),
+        Some(ip_str) => ip_str.clone(),
+    };
     let mut is_connected = false;
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);

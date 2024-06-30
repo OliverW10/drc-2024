@@ -47,11 +47,12 @@ while(1):
     upper_blue = np.array([h_hi, s_hi, v_hi])
 
     mask = cv2.inRange(hsv,lower_blue, upper_blue)
+    cv2.imshow('mask',mask)
 
     result = cv2.bitwise_and(frame,frame,mask = mask)
     cv2.rectangle(result,(200,360),(440,480),(0,255,0),3)
-
     cv2.imshow('result',result)
+
 
     k = cv2.waitKey(5) & 0xFF
     if k != 255:

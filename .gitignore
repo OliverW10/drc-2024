@@ -9,3 +9,5 @@ micro-py/wifi_creds.py
 **.log
 **/.env
 **.avi
+**.jpg
+scripts/Dataset/blob_labels.csv

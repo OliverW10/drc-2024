@@ -147,12 +147,8 @@ const MAX_SPEED: f32 = 0.5;
 
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
-        if speed.abs() < 0.05 {
-            self.stop();
-        } else {
-            let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
-            self.set(pulse_width_us);
-        }
+        let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
+        self.set(pulse_width_us);
     }
 }
 

@@ -54,8 +54,8 @@ pub mod colours {
     const fn r(l: VecN<u8, 3>, h: VecN<u8, 3>) -> ColourRange {
         ColourRange { low: l, high: h }
     }
-    pub const YELLOW_MASK: ColourRange = r(c(36, 19, 154), c(58, 255, 255));
-    pub const BLUE_MASK: ColourRange = r(c(87, 54, 95), c(122, 255, 255));
+    pub const YELLOW_MASK: ColourRange = r(c(39, 22, 162), c(78, 255, 255));
+    pub const BLUE_MASK: ColourRange = r(c(79, 43, 86), c(104, 255, 255));
     // pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
@@ -84,7 +84,7 @@ pub mod image {
 pub mod display {
     use super::is_running_on_pi;
 
-    pub const SHOULD_DISPLAY_RAW_VIDEO: bool = false && !is_running_on_pi();
+    pub const SHOULD_DISPLAY_RAW_VIDEO: bool = true && !is_running_on_pi();
 }
 
 #[inline]
