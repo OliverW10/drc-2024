@@ -47,7 +47,7 @@ fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
             local_state.ip.clone()
         };
         println!("Trying to connect");
-        match TcpStream::connect_timeout(&ip, Duration::from_millis(500)) {
+        match TcpStream::connect_timeout(&ip, Duration::from_millis(2000)) {
             Ok(connection) => {
                 println!("Connected");
                 return connection
@@ -60,7 +60,7 @@ fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
             ),
         };
         count += 1;
-        thread::sleep(Duration::from_millis(500))
+        thread::sleep(Duration::from_millis(1000))
     }
 }
 
