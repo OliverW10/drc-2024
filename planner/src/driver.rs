@@ -117,12 +117,11 @@ impl Drop for PwmDriver {
 }
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
-const PWM_RANGE: f32 = 0.5;
 const PWM_CENTER: f32 = 1400.0;
-const STEER_PWM_MAX: f32 = PWM_CENTER - 600.0 * PWM_RANGE;
-const STEER_PWM_MIN: f32 = PWM_CENTER + 600.0 * PWM_RANGE;
-
-const MAX_CURVATURE: f32 = 2.0;
+const STEER_PWM_MAX: f32 = PWM_CENTER - 400.0;
+const STEER_PWM_MIN: f32 = PWM_CENTER + 400.0;
+// 75cm right, 85 left (should recalib with better center later) = 1/0.8
+const MAX_CURVATURE: f32 = 1.25;
 impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
@@ -131,21 +130,13 @@ impl Steerer for PwmDriver {
     }
 }
 
-// Rough estimate for MAX_SPEED
-const METERS_PER_ROTATION: f32 = 0.1 * 3.141;
-const GEAR_RATIO: f32 = 1. / 5.;
-const K_V: f32 = 790.0 / 60.0; // kv = rps per volt unloaded
-const LOSSES: f32 = 0.6;
-const V_BUS: f32 = 3.7 * 2.;
-const MAX_SPEED_ESTIMATE: f32 = K_V * V_BUS * LOSSES * GEAR_RATIO * METERS_PER_ROTATION;
-
 const MAX_DRIVE_PWM: f32 = 225.0; // 1275, pwm to achive MAX_SPEED
 const MIN_DRIVE_PWM: f32 = 125.0; // 1375, highest pwm at which we are stopped
 const STOP_DRIVE_PWM: f32 = 1500.0; // pwm to give when wanting to be stopped
 const SPEED_DEADZONE: f32 = 0.05;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
-// To find experimentally
-const MAX_SPEED: f32 = 1.0;
+// Did 6 meters in 2 10/30 seconds
+const MAX_SPEED: f32 = 6.0/2.33;
 
 fn get_drive_pwm(speed: MetersPerSecond) -> f32{
     if speed.abs() < SPEED_DEADZONE {

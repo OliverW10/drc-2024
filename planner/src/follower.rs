@@ -19,7 +19,7 @@ impl Follower {
 
         let result = SimpleDrive {
             curvature: curvature as f32,
-            speed: 1.0,
+            speed: 0.2,
         };
         result
     }

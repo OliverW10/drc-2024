@@ -14,7 +14,7 @@ mod messages {
 }
 use comms::{start_request_loop, CommsState, CONNECTED_TIMEOUT};
 use components::{change_command_from_keys, driver_display, map_display, state_selector};
-use eframe::egui::{self, Color32, RichText};
+use eframe::egui::{self, Color32, Pos2, RichText};
 use messages::command::CommandMode;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -51,6 +51,7 @@ fn main() -> Result<(), eframe::Error> {
     start_request_loop(Arc::clone(&state_main));
 
     let mut mode = CommandMode::StateOff;
+    let mut map_center = Pos2 { x: 0., y: 0. };
     let args = env::args().skip(1).collect::<Vec<String>>();
     let mut ip_str = match args.first() {
         None => "192.168.155.23".to_owned(),
@@ -88,7 +89,7 @@ fn main() -> Result<(), eframe::Error> {
                     &state.command_to_send,
                     &state.last_recieved_diagnostic.diagnostic.clone().unwrap_or_default(),
                 );
-                map_display(ui, &state.map, &state.last_recieved_diagnostic.path.clone().unwrap_or_default());
+                map_display(ui, &state.map, &state.last_recieved_diagnostic.path.clone().unwrap_or_default(), &mut map_center);
 
                 is_connected = state.last_message_at.elapsed() < CONNECTED_TIMEOUT;
 

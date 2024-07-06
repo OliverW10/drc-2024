@@ -43,8 +43,16 @@ fn in_rect(p: Pos2, r: Rect) -> Pos2 {
     r.lerp_inside(vec)
 }
 
-pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messages::path::Path) {
-    let map_center = Pos2 { x: 0., y: 0. };
+pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messages::path::Path, map_center: &mut Pos2) {
+    ui.horizontal(|ui| {
+        ui.label(format!("x:{}, y:{}", map_center.x, map_center.y));
+        if ui.button("Recenter").clicked() {
+            let new_center = path.points.first().map(|pos| Pos2 {x: pos.x, y: pos.y}).unwrap_or(Pos2 { x: 0.0, y: 0.0});
+            println!("Centering map on {},{}", new_center.x, new_center.y);
+            map_center.x = new_center.x;
+            map_center.y = new_center.y;
+        }
+    });
     let map_scale = 1. / 2.; // meters in each direction of origin
     let paint = ui.painter().with_clip_rect(MAP_RECT);
     paint.rect_filled(MAP_RECT, 0., Color32::DARK_GRAY);
@@ -76,14 +84,14 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
     }
 }
 
-const MAX_SPEED: f32 = 1.0;
-const MAX_TURN: f32 = 2.;
+const MAX_SPEED: f32 = 0.5; //2.5;
+const MAX_TURN: f32 = 1.25;
 
-const ACCEL: f32 = 0.5;
-const TURN_RATE: f32 = 3.;
+const ACCEL: f32 = 8.0;
+const TURN_RATE: f32 = 5.;
 
-const SPEED_DECAY: f32 = 0.2;
-const TURN_DECAY: f32 = 1.5;
+const SPEED_DECAY: f32 = 4.0;
+const TURN_DECAY: f32 = 3.0;
 
 fn change_input(
     dt: Duration, last: f32, is_positive: bool, is_negative: bool, change_from_input: f32, max_output: f32,
