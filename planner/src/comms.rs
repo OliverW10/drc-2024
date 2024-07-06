@@ -154,7 +154,7 @@ fn reset_map(target: &mut messages::diagnostic::FullDiagnostic) {
     target.map_update = None;
 }
 
-const COMMAND_TIMEOUT: Duration = Duration::from_millis(200);
+const COMMAND_TIMEOUT: Duration = Duration::from_millis(300);
 
 impl Commander for NetworkComms {
     fn get_latest_message(&self) -> messages::command::DriveCommand {

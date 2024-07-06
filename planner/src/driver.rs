@@ -118,11 +118,11 @@ impl Drop for PwmDriver {
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
 const PWM_RANGE: f32 = 0.5;
-const PWM_CENTER: f32 = 1500.0;
-const STEER_PWM_MAX: f32 = PWM_CENTER + 500.0 * PWM_RANGE;
-const STEER_PWM_MIN: f32 = PWM_CENTER - 500.0 * PWM_RANGE;
+const PWM_CENTER: f32 = 1400.0;
+const STEER_PWM_MAX: f32 = PWM_CENTER - 600.0 * PWM_RANGE;
+const STEER_PWM_MIN: f32 = PWM_CENTER + 600.0 * PWM_RANGE;
 
-const MAX_CURVATURE: f32 = 3.0;
+const MAX_CURVATURE: f32 = 2.0;
 impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
@@ -139,48 +139,36 @@ const LOSSES: f32 = 0.6;
 const V_BUS: f32 = 3.7 * 2.;
 const MAX_SPEED_ESTIMATE: f32 = K_V * V_BUS * LOSSES * GEAR_RATIO * METERS_PER_ROTATION;
 
-const MAX_DRIVE_PWM: f32 = 1700.0;
-const STOP_DRIVE_PWM: f32 = 1500.0;
+const MAX_DRIVE_PWM: f32 = 225.0; // 1275, pwm to achive MAX_SPEED
+const MIN_DRIVE_PWM: f32 = 125.0; // 1375, highest pwm at which we are stopped
+const STOP_DRIVE_PWM: f32 = 1500.0; // pwm to give when wanting to be stopped
+const SPEED_DEADZONE: f32 = 0.05;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
 // To find experimentally
-const MAX_SPEED: f32 = 0.5;
+const MAX_SPEED: f32 = 1.0;
+
+fn get_drive_pwm(speed: MetersPerSecond) -> f32{
+    if speed.abs() < SPEED_DEADZONE {
+        STOP_DRIVE_PWM
+    } else {
+        // assumes speeds are symetric around STOP_DRIVE_PWM
+        let pwm_travel = MAX_DRIVE_PWM - MIN_DRIVE_PWM;
+        let speed_percent = speed.abs() / MAX_SPEED;
+        let direction = if speed > 0.0 { -1.0 } else { 1.0 };
+        let pulse_width_us = STOP_DRIVE_PWM + direction * (MIN_DRIVE_PWM + pwm_travel * speed_percent);
+        pulse_width_us
+    }
+}
 
 impl Driver for PwmDriver {
     fn drive_speed(&mut self, speed: MetersPerSecond) {
-        let pulse_width_us = STOP_DRIVE_PWM + (MAX_DRIVE_PWM - STOP_DRIVE_PWM) * speed / MAX_SPEED;
+        let pulse_width_us = get_drive_pwm(speed);
         self.set(pulse_width_us);
+        // println!("{pulse_width_us}");
     }
 }
 
-pub struct SerialDriver {
-    port_file: Option<SerialPort>,
-}
 
-impl SerialDriver {
-    pub fn new(name: &str) -> SerialDriver {
-        SerialDriver {
-            port_file: match SerialPort::open(name, 115200) {
-                Ok(file) => {
-                    println!("Successfully opened {}", name);
-                    Some(file)
-                }
-                Err(_) => {
-                    println!("Could not open {}", name);
-                    None
-                }
-            },
-        }
-    }
-}
-
-impl Driver for SerialDriver {
-    fn drive_speed(&mut self, speed: MetersPerSecond) {
-        let rps = speed / METERS_PER_ROTATION;
-        if let Some(serial) = &self.port_file {
-            serial.write(format!("v 0 {rps}\nv 1 {rps}\n").as_bytes()).unwrap();
-        }
-    }
-}
 
 pub trait RelativeStateProvider {
     fn get_movement(&self) -> CarState;

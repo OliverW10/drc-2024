@@ -76,14 +76,14 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
     }
 }
 
-const MAX_SPEED: f32 = 0.5;
-const MAX_TURN: f32 = 3.;
+const MAX_SPEED: f32 = 1.0;
+const MAX_TURN: f32 = 2.;
 
-const ACCEL: f32 = 1.;
-const TURN_RATE: f32 = 10.;
+const ACCEL: f32 = 0.5;
+const TURN_RATE: f32 = 3.;
 
-const SPEED_DECAY: f32 = 1.;
-const TURN_DECAY: f32 = 3.;
+const SPEED_DECAY: f32 = 0.2;
+const TURN_DECAY: f32 = 1.5;
 
 fn change_input(
     dt: Duration, last: f32, is_positive: bool, is_negative: bool, change_from_input: f32, max_output: f32,
