@@ -3,7 +3,7 @@ import time
 import os
  
 if os.path.isfile("video.avi"):
-    raise Exception("file already exists, download it and delete it. `scp pi@raspberrypi.local:~/drc-2024/planner/video.avi ~`")
+    raise Exception("file already exists, download it and delete it. `scp pi@raspberrypi.local:~/drc-2024/scripts/video.avi ~`")
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)

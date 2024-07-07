@@ -17,11 +17,7 @@ use components::{change_command_from_keys, driver_display, map_display, state_se
 use eframe::egui::{self, Color32, Pos2, RichText};
 use messages::command::CommandMode;
 use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    str::FromStr,
-    sync::{Arc, Mutex},
-    time::{Duration, Instant},
-    env,
+    collections::VecDeque, env, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, sync::{Arc, Mutex}, time::{Duration, Instant}
 };
 
 impl ToString for CommandMode {
@@ -61,6 +57,7 @@ fn main() -> Result<(), eframe::Error> {
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);
     let mut client_fps_avg = 0.0;
+    let mut points_per_second = 0.0;
 
     eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -107,8 +104,10 @@ fn main() -> Result<(), eframe::Error> {
                 }
                 let alpha = 0.03;
                 client_fps_avg = client_fps_avg * (1.0-alpha) + (1.0/delta_time.as_secs_f32()) * alpha;
-                ui.label(format!("Client fps: {:.2}", client_fps_avg));
-                ui.label(format!("Points: {}", state.map.len()));
+                ui.label(format!("Client fps: {:.1}", client_fps_avg));
+                let points_added = state.last_recieved_diagnostic.map_update.clone().map(|m| m.points_added.len()).unwrap_or_default() as f32;
+                points_per_second = points_per_second * (1.0-alpha) + points_added * alpha;
+                ui.label(format!("Points: {} ({:.1}/t)", state.map.len(), points_per_second));
             }
         });
         ctx.request_repaint();

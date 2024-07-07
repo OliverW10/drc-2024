@@ -11,7 +11,7 @@ pub const PLAN_STEP_SIZE_METERS: f64 = 0.2;
 pub const PLAN_MAX_LENGTH_METERS: f64 = 2.0;
 const PLAN_MAX_STEPS: u32 = (PLAN_MAX_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
 
-const MAX_CURVATURE: f64 = 1.5;
+const MAX_CURVATURE: f64 = 1.8;
 
 mod distance_calculators {
     use std::f64::consts::PI;

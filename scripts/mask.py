@@ -23,13 +23,15 @@ cv2.createTrackbar('s lo', 'result',0,255,nothing)
 cv2.createTrackbar('v hi', 'result',255,255,nothing)
 cv2.createTrackbar('v lo', 'result',0,255,nothing)
 
-while(1):
+paused = False
 
-    got_frame, frame = cap.read()
-    if not got_frame:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        print("looped")
-        continue
+while(1):
+    if not paused:
+        got_frame, frame = cap.read()
+        if not got_frame:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            print("looped")
+            continue
 
     #converting to HSV
     hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
@@ -53,9 +55,12 @@ while(1):
     cv2.rectangle(result,(200,360),(440,480),(0,255,0),3)
     cv2.imshow('result',result)
 
+    cv2.imshow('orig', frame)
 
     k = cv2.waitKey(5) & 0xFF
-    if k != 255:
+    if k == 32:
+        paused = not paused
+    elif k != 255:
         break
 
 h_hi = cv2.getTrackbarPos('h hi','result')

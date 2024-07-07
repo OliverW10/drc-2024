@@ -1,5 +1,5 @@
-use crate::messages;
-use prost::Message;
+use crate::messages::{self, diagnostic::FullDiagnostic};
+use prost::{DecodeError, Message};
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpStream},
@@ -84,13 +84,18 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>) {
         connection.set_nodelay(true).unwrap();
 
         loop {
+
+            let message_sent_at = Instant::now();
             {
+                let local_state = state.lock().unwrap();
+                send_request(&mut connection, &local_state);
+            }
+            // Should not hold lock on state while recieveing as it can take a while
+            let response_result = read_response(&mut connection);
+            if let Ok(response) = response_result {
                 let mut local_state = state.lock().unwrap();
 
-                let message_sent_at = Instant::now();
-                send_request(&mut connection, &local_state);
-
-                read_response(&mut connection, &mut local_state);
+                local_state.last_recieved_diagnostic = response;
                 local_state.last_latency = message_sent_at.elapsed();
                 local_state.last_message_at = Instant::now();
 
@@ -101,7 +106,7 @@ pub fn start_request_loop(state: Arc<Mutex<CommsState>>) {
                     .unwrap_or_default();
                 update_map(&mut local_state.map, &map_update);
             }
-            std::thread::sleep(Duration::from_secs_f64(0.050));
+            std::thread::sleep(Duration::from_millis(50));
         }
     });
 }
@@ -113,7 +118,7 @@ fn send_request(connection: &mut TcpStream, state: &CommsState) {
 
 const RECV_BUF_LEN: usize = 100000;
 
-fn read_response(connection: &mut TcpStream, state: &mut CommsState) -> bool {
+fn read_response(connection: &mut TcpStream) -> Result<FullDiagnostic, ()> {
     let mut buf = [0; RECV_BUF_LEN];
 
     let mut total_recieved_bytes = connection.read(&mut buf[..]).unwrap();
@@ -125,7 +130,7 @@ fn read_response(connection: &mut TcpStream, state: &mut CommsState) -> bool {
     let total_expected_length = length_length + length_delimiter;
     if total_expected_length > RECV_BUF_LEN {
         println!("expecting too many bytes {}", total_expected_length);
-        return false;
+        return Err(());
     }
 
     // Message may be too big to fit in a single tcp packet so may be split into multiple reads
@@ -137,17 +142,21 @@ fn read_response(connection: &mut TcpStream, state: &mut CommsState) -> bool {
     }
     if total_expected_length > total_expected_length {
         println!("had very much entirely too many bytes");
-        return false;
+        return Err(());
     }
-    println!("expected: {:?}, actual: {} in {}", total_expected_length, total_recieved_bytes, packets);
-
-    state.last_recieved_diagnostic.clear();
-    let decode_result = state.last_recieved_diagnostic.merge_length_delimited(&buf[..]);
-
-    if let Err(e) = decode_result {    
-        println!("{e}");
-        return false;
+    if total_expected_length != total_recieved_bytes {
+        println!("expected: {:?}, actual: {} in {}", total_expected_length, total_recieved_bytes, packets);
     }
 
-    return true;
+    let decode_result = FullDiagnostic::decode_length_delimited(&buf[..]);
+
+    match decode_result {
+        Err(e) => {
+            println!("{e}");
+            return Err(());
+        },
+        Ok(r) => {
+            return Ok(r);
+        }
+    }
 }

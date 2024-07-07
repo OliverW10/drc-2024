@@ -53,7 +53,7 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
             map_center.y = new_center.y;
         }
     });
-    let map_scale = 1. / 2.; // meters in each direction of origin
+    let map_scale = 1. / 4.; // meters in each direction of origin
     let paint = ui.painter().with_clip_rect(MAP_RECT);
     paint.rect_filled(MAP_RECT, 0., Color32::DARK_GRAY);
 
@@ -84,8 +84,8 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
     }
 }
 
-const MAX_SPEED: f32 = 0.5; //2.5;
-const MAX_TURN: f32 = 1.1;
+const MAX_SPEED: f32 = 0.75; //2.5;
+const MAX_TURN: f32 = 1.4;
 
 const ACCEL: f32 = 2.0;
 const TURN_RATE: f32 = 5.;

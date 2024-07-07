@@ -54,8 +54,8 @@ pub mod colours {
     const fn r(l: VecN<u8, 3>, h: VecN<u8, 3>) -> ColourRange {
         ColourRange { low: l, high: h }
     }
-    pub const YELLOW_MASK: ColourRange = r(c(39, 22, 162), c(78, 255, 255));
-    pub const BLUE_MASK: ColourRange = r(c(79, 43, 86), c(104, 255, 255));
+    pub const YELLOW_MASK: ColourRange = r(c(36, 22, 142), c(65, 130, 255));
+    pub const BLUE_MASK: ColourRange = r(c(79, 73, 86), c(104, 255, 255));
     // pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
@@ -64,7 +64,7 @@ pub mod colours {
 pub mod image {
     use opencv::core::Rect;
 
-    pub const TOP_CROP: i32 = 5;
+    pub const TOP_CROP: i32 = 0;
     pub const EXCLUDE_RECT: Rect = Rect {
         x: 0, //x: 195,
         y: 360,
