@@ -59,8 +59,8 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
 
     for point in map {
         let pos = Pos2 {
-            x: point.inner.x,
-            y: point.inner.y,
+            x: point.inner.x - map_center.x,
+            y: point.inner.y - map_center.y,
         };
         let point_type = PointType::try_from(point.inner.point_type).unwrap();
         let c = match point_type {
@@ -77,20 +77,20 @@ pub fn map_display(ui: &mut egui::Ui, map: &Vec<MapPointWithTime>, path: &messag
 
     if path.points.len() > 0 {
         for (prev, next) in zip(&path.points[..], &path.points[1..]) {
-            let a = in_rect(Pos2 { x: prev.x, y: prev.y } * map_scale, MAP_RECT);
-            let b = in_rect(Pos2 { x: next.x, y: next.y } * map_scale, MAP_RECT);
+            let a = in_rect(Pos2 { x: prev.x - map_center.x, y: prev.y - map_center.y } * map_scale, MAP_RECT);
+            let b = in_rect(Pos2 { x: next.x - map_center.x, y: next.y - map_center.y } * map_scale, MAP_RECT);
             paint.line_segment([a, b], Stroke::new(1., Color32::WHITE));
         }
     }
 }
 
 const MAX_SPEED: f32 = 0.5; //2.5;
-const MAX_TURN: f32 = 1.25;
+const MAX_TURN: f32 = 1.1;
 
-const ACCEL: f32 = 8.0;
+const ACCEL: f32 = 2.0;
 const TURN_RATE: f32 = 5.;
 
-const SPEED_DECAY: f32 = 4.0;
+const SPEED_DECAY: f32 = 1.0;
 const TURN_DECAY: f32 = 3.0;
 
 fn change_input(

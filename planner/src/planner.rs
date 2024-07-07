@@ -1,28 +1,24 @@
-// https://arxiv.org/pdf/1105.1186.pdf
-
-// ai planning and control: https://project-archive.inf.ed.ac.uk/ug4/20191552/ug4_proj.pdf
-
-// https://en.wikipedia.org/wiki/Motion_planning
-
 use std::cmp::Ord;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 use std::{cmp::Ordering, collections::BinaryHeap};
 
 use crate::config::is_running_on_pi;
-use crate::config::plan::{MAX_CURVATURE, PLAN_MAX_STEPS, PLAN_STEP_SIZE_METERS};
 use crate::points::{Point, PointMap, Pos};
 use crate::state::CarState;
+
+const PLAN_STEP_SIZE_METERS: f64 = 0.2;
+const PLAN_MAX_LENGTH_METERS: f64 = 2.0;
+const PLAN_MAX_STEPS: u32 = (PLAN_MAX_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
+
+const MAX_CURVATURE: f64 = 1.5;
 
 mod distance_calculators {
     use std::f64::consts::PI;
 
-    use crate::{
-        config::plan::PLAN_STEP_SIZE_METERS,
-        points::{Point, PointType},
-    };
+    use crate::points::{Point, PointType};
 
-    use super::CarState;
+    use super::{CarState, PLAN_STEP_SIZE_METERS};
 
     const EDGE_MAX_WEIGHT: f64 = 3.0;
     pub const EDGE_MAX_DIST: f64 = 0.25;

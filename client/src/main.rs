@@ -60,6 +60,7 @@ fn main() -> Result<(), eframe::Error> {
     let mut is_connected = false;
     let mut last_time = Instant::now();
     let mut delta_time = Duration::from_millis(16);
+    let mut client_fps_avg = 0.0;
 
     eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -104,7 +105,9 @@ fn main() -> Result<(), eframe::Error> {
                     ui.label(format!("No diagnostic recieved"));
                     ui.label(format!("-"));
                 }
-                ui.label(format!("Client fps: {:.2}", 1.0 / delta_time.as_secs_f32()));
+                let alpha = 0.03;
+                client_fps_avg = client_fps_avg * (1.0-alpha) + (1.0/delta_time.as_secs_f32()) * alpha;
+                ui.label(format!("Client fps: {:.2}", client_fps_avg));
                 ui.label(format!("Points: {}", state.map.len()));
             }
         });

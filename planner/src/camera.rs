@@ -77,7 +77,7 @@ pub fn display_image_and_get_key(_frame: &Mat) -> bool {
         highgui::imshow("window", &frame).unwrap();
     }
 
-    let key = highgui::wait_key(25).unwrap();
+    let key = highgui::wait_key(20).unwrap();
     if key > 0 && key != 255 {
         println!("Got key press {key}");
         return true;

@@ -1,7 +1,7 @@
-use crate::{config::is_running_on_pi, messages::path::SimpleDrive, points::Pos, state::CarState};
+use crate::{config::is_running_on_pi, messages::path::SimpleDrive, odom::{BlindRelativeStateProvider, RelativeStateProvider}, points::Pos, state::CarState};
 use rppal::pwm::{Channel, Polarity, Pwm};
 use serial2::{self, SerialPort};
-use std::time::{Duration, Instant};
+use std::{collections::VecDeque, time::{Duration, Instant}};
 
 // Interfaces with hardware to drive the car
 pub struct CarCommander {
@@ -156,49 +156,5 @@ impl Driver for PwmDriver {
         let pulse_width_us = get_drive_pwm(speed);
         self.set(pulse_width_us);
         // println!("{pulse_width_us}");
-    }
-}
-
-
-
-pub trait RelativeStateProvider {
-    fn get_movement(&self) -> CarState;
-}
-
-struct BlindRelativeStateProvider {
-    last_command: SimpleDrive,
-    last_command_at: Instant,
-    previous_command_for: Duration,
-}
-
-impl RelativeStateProvider for BlindRelativeStateProvider {
-    fn get_movement(&self) -> CarState {
-        puffin::profile_function!();
-
-        let result = CarState {
-            pos: Pos { x: 0., y: 0. },
-            angle: 0.,
-            curvature: self.last_command.curvature as f64,
-            speed: self.last_command.speed as f64,
-        }
-        .step_time(self.previous_command_for);
-
-        result
-    }
-}
-
-impl BlindRelativeStateProvider {
-    fn new() -> BlindRelativeStateProvider {
-        BlindRelativeStateProvider {
-            last_command: SimpleDrive::default(),
-            last_command_at: Instant::now(),
-            previous_command_for: Duration::ZERO,
-        }
-    }
-
-    fn set_command(&mut self, command: SimpleDrive) {
-        self.last_command = command;
-        self.previous_command_for = self.last_command_at.elapsed();
-        self.last_command_at = Instant::now();
     }
 }

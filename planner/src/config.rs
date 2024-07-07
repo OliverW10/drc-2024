@@ -61,18 +61,10 @@ pub mod colours {
     // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
 }
 
-pub mod plan {
-    pub const PLAN_STEP_SIZE_METERS: f64 = 0.2;
-    pub const PLAN_MAX_LENGTH_METERS: f64 = 3.0;
-    pub const PLAN_MAX_STEPS: u32 = (PLAN_MAX_LENGTH_METERS / PLAN_STEP_SIZE_METERS) as u32;
-
-    pub const MAX_CURVATURE: f64 = 1.0 / 0.3;
-}
-
 pub mod image {
     use opencv::core::Rect;
 
-    pub const TOP_CROP: i32 = 20;
+    pub const TOP_CROP: i32 = 5;
     pub const EXCLUDE_RECT: Rect = Rect {
         x: 0, //x: 195,
         y: 360,

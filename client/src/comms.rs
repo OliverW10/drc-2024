@@ -64,7 +64,7 @@ fn wait_to_connect(state: Arc<Mutex<CommsState>>) -> TcpStream {
     }
 }
 
-const MAX_TIMEOUT: Duration = Duration::from_millis(300);
+const MAX_TIMEOUT: Duration = Duration::from_millis(5000);
 fn update_map(map: &mut Vec<MapPointWithTime>, map_update: &messages::path::MapUpdate) {
     let mut new_points = map_update
         .points_added

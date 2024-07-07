@@ -24,7 +24,7 @@ fn rescale(x: f32, from_min: f32, from_max: f32, to_min: f32, to_max: f32) -> f3
 // Get the value the line finder will set expire_at to for new points
 pub fn get_point_expiry(pos: Pos, point_map: &dyn PointMap) -> f64 {
     let count_in_grid = point_map.get_count_in_area(pos) as f32;
-    let keep_for = Duration::from_secs_f32(rescale(count_in_grid, 0.0, 100.0, 1.5, 0.2));
+    let keep_for = Duration::from_secs_f32(rescale(count_in_grid, 0.0, 100.0, 3.0, 0.3));
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     (now + keep_for).as_secs_f64()
 }

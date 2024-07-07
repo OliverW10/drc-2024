@@ -10,6 +10,7 @@ mod points;
 mod pruner;
 mod state;
 mod vision;
+mod odom;
 mod messages {
     pub mod path {
         include!(concat!(env!("OUT_DIR"), "/messages.path.rs"));
@@ -25,10 +26,11 @@ mod messages {
 use camera::Capture;
 use comms::{Commander, NetworkComms};
 use config::file::ConfigReader;
-use driver::{CarCommander, RelativeStateProvider};
+use driver::CarCommander;
 use follower::Follower;
 use logging::Logger;
 use messages::{command::CommandMode, diagnostic::Diagnostic, path::SimpleDrive};
+use odom::RelativeStateProvider;
 use opencv::Result;
 use planner::Planner;
 use points::{GridPointMap, PointMap, Pos};

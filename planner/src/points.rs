@@ -111,7 +111,7 @@ pub trait PointMap {
     fn get_last_removed_ids(&mut self) -> Vec<PointID>;
 }
 
-const GRID_SIZE: f64 = 0.2;
+const GRID_SIZE: f64 = 0.1;
 
 #[derive(PartialEq, Eq, Hash)]
 struct GridIndex {
