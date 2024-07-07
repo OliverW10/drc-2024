@@ -1,4 +1,4 @@
-use crate::{config::plan::PLAN_STEP_SIZE_METERS, messages, planner, points};
+use crate::{messages, planner::{self, PLAN_STEP_SIZE_METERS}, points};
 use prost::Message;
 use std::{fs::File, io::Write};
 use time::OffsetDateTime;

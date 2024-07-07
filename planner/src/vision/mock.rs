@@ -1,8 +1,5 @@
 use crate::{
-    config::file::ConfigReader,
-    points::{Point, PointMap, PointType, Pos},
-    pruner::get_point_expiry,
-    state::CarState,
+    config::file::ConfigReader, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState
 };
 
 use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
@@ -26,6 +23,7 @@ impl ObjectFinder for FakePointProvider {
         &mut self, _: &opencv::core::Mat, _: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>,
         point_map: &dyn PointMap,
     ) -> Result<Vec<Point>, opencv::Error> {
+        let mut pruner = Pruner::new();
         let all_lines = vec![
             Lines {
                 point_type: PointType::LeftLine,
@@ -52,13 +50,13 @@ impl ObjectFinder for FakePointProvider {
         let mut points = vec![
             Point {
                 id: rand::random(),
-                expire_at: get_point_expiry(Pos { x: -2.75, y: 0.0 }, point_map),
+                expire_at: pruner.get_point_expiry(Pos { x: -2.75, y: 0.0 }, point_map),
                 pos: Pos { x: -2.75, y: 0.0 },
                 point_type: PointType::ArrowLeft,
             },
             Point {
                 id: rand::random(),
-                expire_at: get_point_expiry(Pos { x: -2.75, y: -2.5 }, point_map),
+                expire_at: pruner.get_point_expiry(Pos { x: -2.75, y: -2.5 }, point_map),
                 pos: Pos { x: -2.75, y: -2.5 },
                 point_type: PointType::ArrowRight,
             },
@@ -70,7 +68,7 @@ impl ObjectFinder for FakePointProvider {
                     let pos = line[0].dist_along(line[1], rand::random::<f64>() * line_dist) + jitter();
                     points.push(Point {
                         id: rand::random(),
-                        expire_at: get_point_expiry(pos, point_map),
+                        expire_at: pruner.get_point_expiry(pos, point_map),
                         point_type: lines_of_type.point_type,
                         pos,
                     });

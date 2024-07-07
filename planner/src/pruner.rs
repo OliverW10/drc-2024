@@ -36,7 +36,7 @@ impl Pruner {
     }
 
     // Get the value the line finder will set expire_at to for new points
-    pub fn get_point_expiry(&self, pos: Pos, point_map: &dyn PointMap) -> f64 {
+    pub fn get_point_expiry(&mut self, pos: Pos, point_map: &dyn PointMap) -> f64 {
         let count_in_grid = point_map.get_count_in_area(pos) as f32;
         let jitter = self.rng.sample(self.dist);
         let keep_for = Duration::from_secs_f32(rescale(count_in_grid, 0.0, 100.0, 3.0, 0.3) * jitter);
