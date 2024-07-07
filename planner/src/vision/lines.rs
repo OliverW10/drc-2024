@@ -9,7 +9,7 @@ use rand::Rng;
 use crate::{
     config::{colours::ColourRange, file::ConfigReader},
     points::{Point, PointMap, PointType, Pos},
-    pruner::get_point_expiry,
+    pruner::Pruner,
     state::CarState,
     vision::perspective::{convert_point_relative_to_global, perspective_correct},
 };
@@ -20,6 +20,7 @@ use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
 pub struct LineFinder {
     line_type: PointType,
     colour: ColourRange,
+    pruner: Pruner,
     // stored between frames to reduce memory allocation
     contours: VectorOfVectorOfPoint,
     mask: Mat,
@@ -32,6 +33,7 @@ impl LineFinder {
             mask: Mat::default(),
             line_type: obstacle_type,
             colour: colour,
+            pruner: Pruner::new(),
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
@@ -97,7 +99,7 @@ impl ObjectFinder for LineFinder {
                     x: p.x as f64,
                     y: p.y as f64,
                 };
-                let confidence = get_point_expiry(pos, point_map);
+                let confidence = self.pruner.get_point_expiry(pos, point_map);
                 convert_point_relative_to_global(
                     Point {
                         pos,
