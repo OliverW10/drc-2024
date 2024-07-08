@@ -13,4 +13,7 @@ message DriveCommand {
   CommandMode state = 1;
   float throttle = 2;
   float turn = 3;
+  uint32 images_frame = 4;
+  uint32 images_blue = 5;
+  uint32 images_yellow = 6;
 }

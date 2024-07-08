@@ -5,9 +5,7 @@ mod obstacle;
 pub mod perspective;
 
 use crate::{
-    config::{colours, file::ConfigReader, image::TOP_CROP},
-    points::{Point, PointMap, PointType},
-    state::CarState,
+    camera::Recorder, config::{colours, file::ConfigReader, image::TOP_CROP}, points::{Point, PointMap, PointType}, state::CarState
 };
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
@@ -15,12 +13,12 @@ use opencv::{
 };
 use perspective::PerspectiveTransformPoints;
 
-use self::{arrow::ArrowFinder, lines::LineFinder, mock::FakePointProvider};
+use self::{arrow::ArrowFinder, lines::LineFinder};
 
 pub trait ObjectFinder {
     fn get_points(
         &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
-        point_map: &dyn PointMap,
+        point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error>;
 }
 
@@ -34,8 +32,8 @@ pub struct Vision {
 impl Vision {
     pub fn new() -> Vision {
         let mut point_finders: Vec<Box<dyn ObjectFinder>> = Vec::new();
-        point_finders.push(Box::new(LineFinder::new(PointType::LeftLine, colours::BLUE_MASK)));
-        point_finders.push(Box::new(LineFinder::new(PointType::RightLine, colours::YELLOW_MASK)));
+        point_finders.push(Box::new(LineFinder::new(PointType::LeftLine, colours::BLUE_MASK, "blue".to_owned())));
+        point_finders.push(Box::new(LineFinder::new(PointType::RightLine, colours::YELLOW_MASK, "yellow".to_owned())));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_MASK)));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));
@@ -53,7 +51,7 @@ impl Vision {
     // Runs all the vision modules that give their output in map points
     pub fn get_points_from_image(
         &mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
-        point_map: &dyn PointMap,
+        point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Vec<Point> {
         puffin::profile_function!();
 
@@ -90,14 +88,16 @@ impl Vision {
             .unwrap();
         }
 
+        recorder.frames.insert("image".to_owned(), self.cropped.clone()); // TODO: does this actually copy the image?
+
         {
             puffin::profile_scope!("hsv");
-            cvt_color(&self.blurred, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
+            cvt_color(&self.cropped, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
         }
 
         self.point_finders
             .iter_mut()
-            .flat_map(|finder| finder.get_points(&self.hsv, &state, config, point_map).unwrap())
+            .flat_map(|finder| finder.get_points(&self.hsv, &state, config, point_map, recorder).unwrap())
             .collect()
     }
 }

@@ -19,19 +19,24 @@ pub trait Commander {
 }
 
 // Manages communication over TCP with one or more client GUIs
+pub struct NetworkCommsData {
+    last_recieved: messages::command::DriveCommand,
+    recived_at: Instant,
+    to_send: messages::diagnostic::FullDiagnostic,
+}
+
 pub struct NetworkComms {
-    last_recieved: Arc<Mutex<messages::command::DriveCommand>>,
-    recived_at: Arc<Mutex<Instant>>,
-    to_send: Arc<Mutex<messages::diagnostic::FullDiagnostic>>,
+    data: Arc<Mutex<NetworkCommsData>>
 }
 
 impl NetworkComms {
     pub fn new() -> NetworkComms {
-        let instance = NetworkComms {
-            last_recieved: Arc::new(Mutex::new(messages::command::DriveCommand::default())),
-            recived_at: Arc::new(Mutex::new(Instant::now() - COMMAND_TIMEOUT)),
-            to_send: Arc::new(Mutex::new(messages::diagnostic::FullDiagnostic::default())),
+        let data = NetworkCommsData {
+            last_recieved: messages::command::DriveCommand::default(),
+            recived_at: Instant::now() - COMMAND_TIMEOUT,
+            to_send: messages::diagnostic::FullDiagnostic::default(),
         };
+        let instance = NetworkComms { data: Arc::new(Mutex::new(data)) };
         instance.start_accept_loop();
         instance
     }
@@ -40,16 +45,12 @@ impl NetworkComms {
     pub fn start_accept_loop(&self) {
         let listener = TcpListener::bind("0.0.0.0:3141").unwrap();
         // not sure if the arc clone is nessisary twice, but it was giving errors without
-        let last_recieved = Arc::clone(&self.last_recieved);
-        let to_send = Arc::clone(&self.to_send);
-        let recived_at = Arc::clone(&self.recived_at);
+        let data_copy = Arc::clone(&self.data);
         thread::spawn(move || {
             for stream in listener.incoming() {
                 Self::start_recv_loop(
                     stream.unwrap(),
-                    Arc::clone(&last_recieved),
-                    Arc::clone(&to_send),
-                    Arc::clone(&recived_at),
+                    Arc::clone(&data_copy),
                 );
             }
         });
@@ -57,42 +58,28 @@ impl NetworkComms {
 
     // Starts a thread which waits for incoming commands
     // and then responds with the most recent diagnostics
-    pub fn start_recv_loop(
-        mut stream: TcpStream, recieved_mutex: Arc<Mutex<messages::command::DriveCommand>>,
-        to_send_mutex: Arc<Mutex<messages::diagnostic::FullDiagnostic>>, time_mutex: Arc<Mutex<Instant>>,
-    ) {
+    pub fn start_recv_loop(mut stream: TcpStream, data_mutex: Arc<Mutex<NetworkCommsData>>) {
         thread::spawn(move || {
             let mut buf = [0; 2048];
             loop {
-                // Scopes are to prevent deadlocks by not taking multiple locks at the same time
-                {
-                    // Wait for and recieve command
-                    stream.read(&mut buf).unwrap();
-                    let mut recieved = recieved_mutex.lock().unwrap();
-                    recieved.clear();
-                    recieved.merge_length_delimited(&buf[..]).unwrap();
+                // Wait for and recieve command
+                stream.read(&mut buf).unwrap();
+                let mut data = data_mutex.lock().unwrap();
+                data.last_recieved.clear();
+                data.last_recieved.merge_length_delimited(&buf[..]).unwrap();
+
+                // Send diagnostic update
+                let to_send_buf = data.to_send.encode_length_delimited_to_vec();
+                reset_map(&mut data.to_send);
+
+                let sent = stream.write(&to_send_buf);
+                if let Err(err) = sent {
+                    println!("Connection write failed: '{}', closing this recieving thread", err);
+                    return;
                 }
-
-                {
-                    puffin::profile_scope!("send msg");
-
-                    // Send diagnostic update
-                    let mut to_send = to_send_mutex.lock().unwrap();
-                    let to_send_buf = to_send.encode_length_delimited_to_vec();
-                    let sent = stream.write(&to_send_buf);
-
-                    if let Err(err) = sent {
-                        println!("Connection write failed: '{}', closing this recieving thread", err);
-                        break;
-                    }
-                    reset_map(&mut to_send);
-                }
-
-                {
-                    // Refresh safety timeout
-                    let mut timestamp = time_mutex.lock().unwrap();
-                    *timestamp = Instant::now();
-                }
+                
+                // Refresh safety timeout
+                data.recived_at = Instant::now();
             }
         });
     }
@@ -102,8 +89,8 @@ impl Logger for NetworkComms {
     fn send_core(&mut self, message: &messages::diagnostic::FullDiagnostic) {
         puffin::profile_function!();
 
-        let mut to_send = self.to_send.lock().unwrap();
-        accumulate_diagnostic_map(&mut to_send, message);
+        let mut data = self.data.lock().unwrap();
+        accumulate_diagnostic_map(&mut data.to_send, message);
     }
 }
 
@@ -160,19 +147,19 @@ impl Commander for NetworkComms {
     fn get_latest_message(&self) -> messages::command::DriveCommand {
         puffin::profile_function!();
 
-        {
-            let last_recived_at_local = self.recived_at.lock().unwrap();
+        let data = self.data.lock().unwrap();
 
-            if last_recived_at_local.elapsed() > COMMAND_TIMEOUT {
-                return messages::command::DriveCommand {
-                    state: CommandMode::StateOff as i32,
-                    throttle: 0.,
-                    turn: 0.,
-                };
-            }
+        if data.recived_at.elapsed() > COMMAND_TIMEOUT {
+            return messages::command::DriveCommand {
+                state: CommandMode::StateOff as i32,
+                throttle: 0.,
+                turn: 0.,
+                images_blue: data.last_recieved.images_blue,
+                images_yellow: data.last_recieved.images_yellow,
+                images_frame: data.last_recieved.images_frame,
+            };
         }
 
-        let last_recieved_local = self.last_recieved.lock().unwrap();
-        last_recieved_local.clone()
+        data.last_recieved.clone()
     }
 }

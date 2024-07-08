@@ -13,11 +13,11 @@ mod messages {
     }
 }
 use comms::{start_request_loop, CommsState, CONNECTED_TIMEOUT};
-use components::{change_command_from_keys, driver_display, map_display, state_selector};
+use components::{change_command_from_keys, driver_display, map_display, picture_taker, state_selector};
 use eframe::egui::{self, Color32, Pos2, RichText};
 use messages::command::CommandMode;
 use std::{
-    collections::VecDeque, env, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, sync::{Arc, Mutex}, time::{Duration, Instant}
+    env, net::{IpAddr, SocketAddr}, str::FromStr, sync::{Arc, Mutex}, time::{Duration, Instant}
 };
 
 impl ToString for CommandMode {
@@ -70,7 +70,6 @@ fn main() -> Result<(), eframe::Error> {
             } else {
                 ui.label(RichText::new("Disconnected").color(Color32::RED));
             }
-            ui.heading("UTS DRC 24");
             state_selector(ui, &mut mode);
 
             {
@@ -108,6 +107,7 @@ fn main() -> Result<(), eframe::Error> {
                 let points_added = state.last_recieved_diagnostic.map_update.clone().map(|m| m.points_added.len()).unwrap_or_default() as f32;
                 points_per_second = points_per_second * (1.0-alpha) + points_added * alpha;
                 ui.label(format!("Points: {} ({:.1}/t)", state.map.len(), points_per_second));
+                picture_taker(ui, &mut state.command_to_send, &ip_str);
             }
         });
         ctx.request_repaint();

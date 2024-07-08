@@ -1,10 +1,12 @@
-use opencv::{
-    core::{Mat, MatTraitConst},
-    highgui,
-    videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_PROP_POS_FRAMES},
-};
+use std::collections::HashMap;
 
-use crate::{config::display::SHOULD_DISPLAY_RAW_VIDEO, display::annotate_video};
+use opencv::{
+    core::{Mat, MatTraitConst, Vector}, highgui, imgcodecs::imwrite, videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_PROP_POS_FRAMES}
+};
+use opencv::prelude::*;
+use time::OffsetDateTime;
+
+use crate::{config::display::SHOULD_DISPLAY_RAW_VIDEO, display::annotate_video, messages};
 
 pub struct Capture {
     inner: videoio::VideoCapture,
@@ -83,4 +85,36 @@ pub fn display_image_and_get_key(_frame: &Mat) -> bool {
         return true;
     }
     return false;
+}
+
+#[derive(Default)]
+pub struct Recorder {
+    images: i32,
+    blues: i32,
+    yellows: i32,
+    pub frames: HashMap<String, Mat>
+}
+
+impl Recorder {
+    pub fn take_images(&mut self, cmd: messages::command::DriveCommand) {
+        if self.images < cmd.images_frame as i32 {
+            self.images += 1;
+            self.record_image(&self.frames["image"], "image"); // TODO: use enum as key's
+        }
+        if self.blues < cmd.images_blue as i32 {
+            self.blues += 1;
+            self.record_image(&self.frames["blue"], "blue");
+        }
+        if self.images < cmd.images_yellow as i32 {
+            self.images += 1;
+            self.record_image(&self.frames["yellow"], "yellow");
+        }
+    }
+
+    fn record_image(&self, img: &Mat, desc: &str) {
+        println!("taking image of {}", desc);
+        let now = OffsetDateTime::now_utc();
+        let params = Vector::<i32>::new(); // required arguemtn
+        let _ = imwrite(format!("images/{}-{}.png", desc, now.to_string()).as_str(), img, &params);
+    }
 }

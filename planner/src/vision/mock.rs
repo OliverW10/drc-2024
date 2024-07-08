@@ -1,5 +1,5 @@
 use crate::{
-    config::file::ConfigReader, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState
+    camera::Recorder, config::file::ConfigReader, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState
 };
 
 use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
@@ -21,7 +21,7 @@ fn jitter() -> Pos {
 impl ObjectFinder for FakePointProvider {
     fn get_points(
         &mut self, _: &opencv::core::Mat, _: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>,
-        point_map: &dyn PointMap,
+        point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         let mut pruner = Pruner::new();
         let all_lines = vec![

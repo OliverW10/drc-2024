@@ -7,11 +7,7 @@ use opencv::{
 use rand::Rng;
 
 use crate::{
-    config::{colours::ColourRange, file::ConfigReader},
-    points::{Point, PointMap, PointType, Pos},
-    pruner::Pruner,
-    state::CarState,
-    vision::perspective::{convert_point_relative_to_global, perspective_correct},
+    camera::Recorder, config::{colours::ColourRange, file::ConfigReader}, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState, vision::perspective::{convert_point_relative_to_global, perspective_correct}
 };
 
 use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
@@ -24,16 +20,18 @@ pub struct LineFinder {
     // stored between frames to reduce memory allocation
     contours: VectorOfVectorOfPoint,
     mask: Mat,
+    name: String,
 }
 
 impl LineFinder {
-    pub fn new(obstacle_type: PointType, colour: ColourRange) -> LineFinder {
+    pub fn new(obstacle_type: PointType, colour: ColourRange, name: String) -> LineFinder {
         LineFinder {
             contours: VectorOfVectorOfPoint::new(),
             mask: Mat::default(),
             line_type: obstacle_type,
             colour: colour,
             pruner: Pruner::new(),
+            name: name
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
@@ -63,7 +61,7 @@ const SAMPLE_EVERY: usize = 20;
 impl ObjectFinder for LineFinder {
     fn get_points(
         &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
-        point_map: &dyn PointMap,
+        point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
 
@@ -76,6 +74,7 @@ impl ObjectFinder for LineFinder {
                 &self.colour.high,
                 &mut self.mask,
             )?;
+            recorder.frames.insert(self.name.clone(), self.mask.clone());
         }
         {
             puffin::profile_scope!("contours");

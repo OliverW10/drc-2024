@@ -1,4 +1,4 @@
-use std::{iter::zip, time::Duration};
+use std::{iter::zip, process::Command, time::Duration};
 
 use eframe::egui::{self, Align2, Color32, Key, Pos2, Rect, Stroke, Vec2};
 
@@ -21,6 +21,29 @@ pub fn state_selector(ui: &mut egui::Ui, current_mode: &mut CommandMode) {
             *current_mode = CommandMode::StateManual;
         }
     });
+}
+
+pub fn picture_taker(ui: &mut egui::Ui, command: &mut messages::command::DriveCommand, ip: &str) {
+    ui.horizontal(|ui| {
+        if ui.button("Image").clicked() {
+            command.images_frame += 1;
+        }
+        if ui.button("Blu Mask").clicked() {
+            command.images_blue += 1;
+        }
+        if ui.button("Yel Mask").clicked() {
+            command.images_yellow += 1;
+        }
+        if ui.button("Sync").clicked() {
+            do_rsync(ip);
+        }
+    });
+}
+
+fn do_rsync(ip: &str) {
+    // Command::new("rsync").arg(format!("pi@raspberrypi.local:~/drc-2024/planner/images/")).arg("images/").status().expect();
+    let output = Command::new("rsync").arg(format!("../planner/images/")).arg("images/").output().expect("asdf");
+    println!("rsynced: {}", std::str::from_utf8(&output.stdout).expect("msg"));
 }
 
 const DRIVER_RECT: Rect = Rect {

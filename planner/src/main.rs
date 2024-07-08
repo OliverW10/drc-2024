@@ -23,7 +23,7 @@ mod messages {
     }
 }
 
-use camera::Capture;
+use camera::{Capture, Recorder};
 use comms::{Commander, NetworkComms};
 use config::file::ConfigReader;
 use driver::CarCommander;
@@ -53,6 +53,7 @@ fn main() -> Result<()> {
     let mut network_comms = NetworkComms::new();
     // TODO: use file config for more than just perspective
     let mut perspective_config = ConfigReader::new("config.dat", get_perspective_points_config);
+    let mut recorder = Recorder::default();
 
     // Initialise state
     let mut current_state = CarState::default();
@@ -81,7 +82,7 @@ fn main() -> Result<()> {
 
         let network_command = network_comms.get_latest_message();
 
-        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config, point_map);
+        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config, point_map, &mut recorder);
 
         point_map.add_points(&new_points);
 
@@ -102,6 +103,8 @@ fn main() -> Result<()> {
         };
 
         driver.drive(command);
+
+        recorder.take_images(network_command);
 
         network_comms.send(
             &path,

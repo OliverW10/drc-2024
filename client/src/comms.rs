@@ -1,5 +1,5 @@
 use crate::messages::{self, diagnostic::FullDiagnostic};
-use prost::{DecodeError, Message};
+use prost::Message;
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpStream},
