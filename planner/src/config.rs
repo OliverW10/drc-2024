@@ -1,5 +1,32 @@
 pub mod file {
     use std::{fs, time::SystemTime};
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct PerspectiveConfig {
+        pub image: Vec<Vec<f32>>,
+        pub ground: Vec<Vec<f32>>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct ColourConfig {
+        pub low: Vec<i32>,
+        pub high: Vec<i32>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct DriveConfig {
+        pub odom_speed_fudge: f32,
+        pub odom_turn_fudge: f32,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Config {
+        pub perspective: PerspectiveConfig,
+        pub yellow_colour: ColourConfig,
+        pub blue_colour: ColourConfig,
+        pub drive_cfg: DriveConfig,
+    }
 
     pub struct ConfigReader<T> {
         last_edit_time: SystemTime,

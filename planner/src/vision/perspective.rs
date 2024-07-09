@@ -5,7 +5,7 @@ use opencv::{
 
 use crate::{
     config::{
-        file::ConfigReader,
+        file::{Config, ConfigReader},
         image::{EXCLUDE_RECT, TOP_CROP},
     },
     points::{Point, Pos},
@@ -14,27 +14,28 @@ use crate::{
 
 pub type PerspectiveTransformPoints = (opencv::core::Vector<Point2f>, opencv::core::Vector<Point2f>);
 
-pub fn get_perspective_points_config(file_contents: &str) -> PerspectiveTransformPoints {
-    let lines: Vec<&str> = file_contents.lines().collect();
+// todo: just do type conversion in here 
+pub fn get_perspective_points_config(config_obj: &Config) -> PerspectiveTransformPoints {
     let mut perspective_points_image = opencv::core::Vector::new();
-    for line in &lines[1..5] {
+    for line in &config_obj.perspective.image {
         perspective_points_image.push(Point2f {
-            x: line.split(',').next().unwrap().trim().parse().unwrap(),
-            y: line.split(',').last().unwrap().trim().parse::<f32>().unwrap() - TOP_CROP as f32,
+            x: line[0],
+            y: line[1] - TOP_CROP as f32,
         });
     }
     let mut perspective_points_ground = opencv::core::Vector::<Point2f>::new();
-    for line in &lines[6..10] {
+    for line in &config_obj.perspective.ground {
         perspective_points_ground.push(Point2f {
-            x: line.split(',').next().unwrap().trim().parse().unwrap(),
-            y: line.split(',').last().unwrap().trim().parse().unwrap(),
+            x: line[0],
+            y: line[1],
         });
     }
+    println!("{:?}, {:?}", perspective_points_image, perspective_points_ground);
     (perspective_points_image, perspective_points_ground)
 }
 
 pub fn perspective_correct(
-    points_ints_in_vec: &Vec<opencv::core::Point2i>, config: &mut ConfigReader<PerspectiveTransformPoints>,
+    points_ints_in_vec: &Vec<opencv::core::Point2i>, config: &mut ConfigReader<Config>,
 ) -> Vec<Pos> {
     puffin::profile_function!();
 
@@ -55,9 +56,9 @@ pub fn perspective_correct(
         .to_mat()
         .unwrap();
     // TODO: don't regenerate every frame
-    let (perspective_points_image, perspective_points_ground) = config.get_value();
-    let transform =
-        get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap();
+    let config_obj = config.get_value();
+    let (perspective_points_image, perspective_points_ground) = get_perspective_points_config(config_obj);
+    let transform = get_perspective_transform(&perspective_points_image, &perspective_points_ground, DECOMP_LU).unwrap();
     perspective_transform(&points_in_mat, &mut result_mat, &transform).unwrap();
 
     let mut result_final = vec![];

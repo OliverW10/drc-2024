@@ -25,7 +25,7 @@ mod messages {
 
 use camera::{Capture, Recorder};
 use comms::{Commander, NetworkComms};
-use config::file::ConfigReader;
+use config::file::{Config, ConfigReader};
 use driver::CarCommander;
 use follower::Follower;
 use logging::Logger;
@@ -36,7 +36,7 @@ use planner::Planner;
 use points::{GridPointMap, PointMap, Pos};
 use state::CarState;
 use std::{collections::VecDeque, env, time::Instant};
-use vision::{perspective::get_perspective_points_config, Vision};
+use vision::Vision;
 
 fn main() -> Result<()> {
     let args = env::args().skip(1).collect::<Vec<String>>();
@@ -51,8 +51,7 @@ fn main() -> Result<()> {
     let follower = Follower::new();
     let mut driver = CarCommander::new();
     let mut network_comms = NetworkComms::new();
-    // TODO: use file config for more than just perspective
-    let mut perspective_config = ConfigReader::new("config.dat", get_perspective_points_config);
+    let mut config = ConfigReader::new("config.json", |s| serde_json::from_str::<Config>(s).unwrap());
     let mut recorder = Recorder::default();
 
     // Initialise state
@@ -84,7 +83,7 @@ fn main() -> Result<()> {
 
         recorder.enqueue_images(&network_command);
 
-        let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config, point_map, &mut recorder);
+        let new_points = vision.get_points_from_image(&frame, current_state, &mut config, point_map, &mut recorder);
 
         point_map.add_points(&new_points);
 

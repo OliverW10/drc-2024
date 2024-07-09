@@ -5,19 +5,18 @@ mod obstacle;
 pub mod perspective;
 
 use crate::{
-    camera::Recorder, config::{colours, file::ConfigReader, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
+    camera::Recorder, config::{colours, file::{Config, ConfigReader}, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
 };
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
     imgproc::{cvt_color, gaussian_blur, ColorConversionCodes},
 };
-use perspective::PerspectiveTransformPoints;
 
 use self::{arrow::ArrowFinder, lines::LineFinder};
 
 pub trait ObjectFinder {
     fn get_points(
-        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<Config>,
         point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error>;
 }
@@ -50,7 +49,7 @@ impl Vision {
 
     // Runs all the vision modules that give their output in map points
     pub fn get_points_from_image(
-        &mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        &mut self, image: &opencv::core::Mat, state: CarState, config: &mut ConfigReader<Config>,
         point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Vec<Point> {
         puffin::profile_function!();

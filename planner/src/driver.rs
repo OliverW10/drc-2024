@@ -1,7 +1,6 @@
 use crate::{config::is_running_on_pi, messages::path::SimpleDrive, odom::{BlindRelativeStateProvider, RelativeStateProvider}, points::Pos, state::CarState};
 use rppal::pwm::{Channel, Polarity, Pwm};
-use serial2::{self, SerialPort};
-use std::{collections::VecDeque, time::{Duration, Instant}};
+use std::time::Duration;
 
 // Interfaces with hardware to drive the car
 pub struct CarCommander {

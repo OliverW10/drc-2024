@@ -1,8 +1,6 @@
 use crate::{
-    camera::Recorder, config::file::ConfigReader, points::{Point, PointMap}, state::CarState, vision::ObjectFinder
+    camera::Recorder, config::file::{Config, ConfigReader}, points::{Point, PointMap}, state::CarState, vision::ObjectFinder
 };
-
-use super::perspective::PerspectiveTransformPoints;
 
 pub struct ArrowFinder {}
 
@@ -13,7 +11,7 @@ impl ArrowFinder {
 }
 impl ObjectFinder for ArrowFinder {
     fn get_points(
-        &mut self, _image: &opencv::core::Mat, _state: &CarState, _: &mut ConfigReader<PerspectiveTransformPoints>,
+        &mut self, _image: &opencv::core::Mat, _state: &CarState, _: &mut ConfigReader<Config>,
         _: &dyn PointMap, _: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         Ok(vec![])

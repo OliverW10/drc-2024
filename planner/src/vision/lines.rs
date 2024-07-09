@@ -7,10 +7,10 @@ use opencv::{
 use rand::Rng;
 
 use crate::{
-    camera::Recorder, config::{colours::ColourRange, file::ConfigReader}, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState, vision::perspective::{convert_point_relative_to_global, perspective_correct}
+    camera::Recorder, config::{colours::ColourRange, file::{Config, ConfigReader}}, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState, vision::perspective::{convert_point_relative_to_global, perspective_correct}
 };
 
-use super::{perspective::PerspectiveTransformPoints, ObjectFinder};
+use super::ObjectFinder;
 
 // Finds points along the edges of something
 pub struct LineFinder {
@@ -69,7 +69,7 @@ const SAMPLE_EVERY: usize = 20;
 
 impl ObjectFinder for LineFinder {
     fn get_points(
-        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<PerspectiveTransformPoints>,
+        &mut self, image: &opencv::core::Mat, state: &CarState, config: &mut ConfigReader<Config>,
         point_map: &dyn PointMap, recorder: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         puffin::profile_function!();
