@@ -5,7 +5,7 @@ mod obstacle;
 pub mod perspective;
 
 use crate::{
-    camera::Recorder, config::{colours, file::ConfigReader, image::TOP_CROP}, points::{Point, PointMap, PointType}, state::CarState
+    camera::Recorder, config::{colours, file::ConfigReader, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
 };
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
@@ -62,7 +62,7 @@ impl Vision {
                 x: 0,
                 y: TOP_CROP,
                 width: size.width,
-                height: size.height - TOP_CROP,
+                height: size.height - TOP_CROP - BOTTOM_CROP,
             };
             let cropped_result = image.apply_1(roi);
             if let Ok(cropped) = cropped_result {

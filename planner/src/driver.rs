@@ -136,7 +136,7 @@ const STOP_DRIVE_PWM: f32 = 1500.0; // pwm to give when wanting to be stopped
 const SPEED_DEADZONE: f32 = 0.05;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
 // Did 6 meters in 2 10/30 seconds
-const MAX_SPEED: f32 = 6.0/2.33;
+const MAX_SPEED: f32 = 2.0; //6.0/2.33;
 
 fn get_drive_pwm(speed: MetersPerSecond) -> f32{
     if speed.abs() < SPEED_DEADZONE {

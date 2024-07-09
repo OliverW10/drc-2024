@@ -64,7 +64,8 @@ pub mod colours {
 pub mod image {
     use opencv::core::Rect;
 
-    pub const TOP_CROP: i32 = 0;
+    pub const TOP_CROP: i32 = 5;
+    pub const BOTTOM_CROP: i32 = 30;
     pub const EXCLUDE_RECT: Rect = Rect {
         x: 0, //x: 195,
         y: 360,
