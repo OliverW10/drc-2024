@@ -121,7 +121,7 @@ const PWM_CENTER: f32 = 1400.0;
 const STEER_PWM_MAX: f32 = PWM_CENTER - 400.0;
 const STEER_PWM_MIN: f32 = PWM_CENTER + 400.0;
 // 75cm right, 85 left (should recalib with better center later) = 1/0.8
-const MAX_CURVATURE: f32 = 1.5;
+const MAX_CURVATURE: f32 = 0.9;
 impl Steerer for PwmDriver {
     fn drive_steer(&mut self, curvature: RadiansPerMeter) {
         let t = 0.5 * curvature / MAX_CURVATURE + 0.5;
@@ -136,7 +136,7 @@ const STOP_DRIVE_PWM: f32 = 1500.0; // pwm to give when wanting to be stopped
 const SPEED_DEADZONE: f32 = 0.05;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that
 // Did 6 meters in 2 10/30 seconds
-const MAX_SPEED: f32 = 2.0; //6.0/2.33;
+const MAX_SPEED: f32 = 6.0/5.45;
 
 fn get_drive_pwm(speed: MetersPerSecond) -> f32{
     if speed.abs() < SPEED_DEADZONE {
