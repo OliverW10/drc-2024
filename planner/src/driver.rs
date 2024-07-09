@@ -131,7 +131,7 @@ impl Steerer for PwmDriver {
 }
 
 const MAX_DRIVE_PWM: f32 = 225.0; // 1275, pwm to achive MAX_SPEED
-const MIN_DRIVE_PWM: f32 = 125.0; // 1375, highest pwm at which we are stopped
+const MIN_DRIVE_PWM: f32 = 122.0; // 1375, highest pwm at which we are stopped
 const STOP_DRIVE_PWM: f32 = 1500.0; // pwm to give when wanting to be stopped
 const SPEED_DEADZONE: f32 = 0.05;
 // Car speed when given MAX_DRIVE_PWM power, speed is assumed to be linear with power below that

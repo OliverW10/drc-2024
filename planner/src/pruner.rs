@@ -39,7 +39,7 @@ impl Pruner {
     pub fn get_point_expiry(&mut self, pos: Pos, point_map: &dyn PointMap) -> f64 {
         let count_in_grid = point_map.get_count_in_area(pos) as f32;
         let jitter = self.rng.sample(self.dist);
-        let keep_for = Duration::from_secs_f32(rescale(count_in_grid, 0.0, 100.0, 3.0, 0.3) * jitter);
+        let keep_for = Duration::from_secs_f32(rescale(count_in_grid, 0.0, 100.0, 0.3, 0.1) * jitter);
         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         (now + keep_for).as_secs_f64()
     }

@@ -21,7 +21,7 @@ mod distance_calculators {
     use super::{CarState, PLAN_STEP_SIZE_METERS};
 
     const EDGE_MAX_WEIGHT: f64 = 3.0;
-    pub const EDGE_MAX_DIST: f64 = 0.25;
+    pub const EDGE_MAX_DIST: f64 = 0.4;
 
     // Weight to make it stay away from the lines
     pub fn calculate_avoid_edge_weight_for_point(state: CarState, point: &Point) -> f64 {

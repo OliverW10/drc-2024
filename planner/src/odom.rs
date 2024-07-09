@@ -18,6 +18,9 @@ pub struct BlindRelativeStateProvider {
     commands_queue: VecDeque<CommandInTime>,
 }
 
+const TURN_FUDGE: f64 = 1.0;
+const DRIVE_FUDGE: f64 = 1.0;
+
 impl RelativeStateProvider for BlindRelativeStateProvider {
     fn get_movement(&self) -> CarState {
         puffin::profile_function!();
@@ -31,8 +34,8 @@ impl RelativeStateProvider for BlindRelativeStateProvider {
         CarState {
             pos: Pos { x: 0., y: 0. },
             angle: 0.,
-            curvature: cmd.curvature as f64,
-            speed: cmd.speed as f64,
+            curvature: cmd.curvature as f64 * TURN_FUDGE,
+            speed: cmd.speed as f64 * DRIVE_FUDGE,
         }.step_time(cmd_for)
     }
 }
