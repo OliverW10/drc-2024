@@ -1,4 +1,4 @@
-use crate::{config::is_running_on_pi, messages::path::SimpleDrive, odom::{BlindRelativeStateProvider, RelativeStateProvider}, points::Pos, state::CarState};
+use crate::{config::{file::{Config, ConfigReader}, is_running_on_pi}, messages::path::SimpleDrive, odom::{BlindRelativeStateProvider, RelativeStateProvider}};
 use rppal::pwm::{Channel, Polarity, Pwm};
 use std::time::Duration;
 
@@ -6,7 +6,7 @@ use std::time::Duration;
 pub struct CarCommander {
     driver: Box<dyn Driver>,
     steerer: Box<dyn Steerer>,
-    state_provider: BlindRelativeStateProvider,
+    state_provider: BlindRelativeStateProvider, // should be dyn
 }
 
 impl CarCommander {
@@ -25,12 +25,12 @@ impl CarCommander {
         }
     }
 
-    pub fn drive(&mut self, command: SimpleDrive) {
+    pub fn drive(&mut self, command: SimpleDrive, config: &mut ConfigReader<Config>) {
         puffin::profile_function!();
 
         self.driver.drive_speed(command.speed);
         self.steerer.drive_steer(command.curvature);
-        self.state_provider.set_command(command);
+        self.state_provider.set_command(command, config);
     }
 
     pub fn get_state_provider(&self) -> &impl RelativeStateProvider {

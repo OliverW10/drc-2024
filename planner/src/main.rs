@@ -103,7 +103,7 @@ fn main() -> Result<()> {
             },
         };
 
-        driver.drive(command);
+        driver.drive(command, &mut config);
 
 
         network_comms.send(

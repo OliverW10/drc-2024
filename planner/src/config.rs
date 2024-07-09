@@ -1,6 +1,8 @@
 pub mod file {
-    use std::{fs, time::SystemTime};
+    use std::{fs, time::{Duration, SystemTime}};
     use serde::{Deserialize, Serialize};
+
+    use super::colours::ColourRange;
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct PerspectiveConfig {
@@ -28,12 +30,26 @@ pub mod file {
         pub drive_cfg: DriveConfig,
     }
 
+    pub enum LineColour {
+        YELLOW, BLUE
+    }
+
+    impl Config {
+        pub fn colour_for_line(&self, col: &LineColour) -> ColourRange {
+            match col {
+                LineColour::BLUE => self.blue_colour.to_opencv_range(),
+                LineColour::YELLOW => self.yellow_colour.to_opencv_range(),
+            }
+        }
+    }
     pub struct ConfigReader<T> {
         last_edit_time: SystemTime,
         filename: String,
         reader: fn(&str) -> T,
         last_value: T,
     }
+
+    const FILE_READ_MIN: Duration = Duration::from_millis(200);
 
     impl<T> ConfigReader<T> {
         pub fn new(filename: &str, reader: fn(&str) -> T) -> ConfigReader<T> {
@@ -50,6 +66,10 @@ pub mod file {
         }
 
         pub fn get_value(&mut self) -> &T {
+            if self.last_edit_time.elapsed().unwrap() > FILE_READ_MIN {
+                return &self.last_value;
+            }
+
             let new_last_edit_time = Self::get_last_edit_time(self.filename.as_str());
             if new_last_edit_time > self.last_edit_time {
                 self.last_value = Self::read_file(self.filename.as_str(), self.reader);
@@ -69,20 +89,22 @@ pub mod file {
 pub mod colours {
     use opencv::core::VecN;
 
+    use super::file::ColourConfig;
+
     pub struct ColourRange {
         pub low: VecN<u8, 3>,
         pub high: VecN<u8, 3>,
     }
 
-    // TODO: use config file
-    const fn c<T>(a: T, b: T, c: T) -> VecN<T, 3> {
-        VecN::<T, 3> { 0: [a, b, c] }
+    impl ColourConfig {
+        pub fn to_opencv_range(&self) -> ColourRange{
+            ColourRange {
+                low: VecN::<u8, 3> { 0: [ self.low[0] as u8, self.low[1] as u8, self.low[2] as u8] },
+                high: VecN::<u8, 3> { 0: [ self.high[0] as u8, self.high[1] as u8, self.high[2] as u8] },
+            }
+        }
     }
-    const fn r(l: VecN<u8, 3>, h: VecN<u8, 3>) -> ColourRange {
-        ColourRange { low: l, high: h }
-    }
-    pub const YELLOW_MASK: ColourRange = r(c(43, 58, 146), c(72, 150, 255));
-    pub const BLUE_MASK: ColourRange = r(c(82, 89, 104), c(115, 255, 255));
+
     // pub const BLACK_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const PURPLE_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));
     // pub const RED_MASK: ColourRange = r(c(110, 50, 100), c(120, 255, 255));

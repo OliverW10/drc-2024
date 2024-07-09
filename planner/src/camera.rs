@@ -1,12 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use opencv::{
     core::{Mat, MatTraitConst, Vector}, highgui, imgcodecs::imwrite, videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_PROP_POS_FRAMES}
 };
-use opencv::prelude::*;
 use time::OffsetDateTime;
 
-use crate::{config::{self, display::SHOULD_DISPLAY_RAW_VIDEO}, display::annotate_video, messages};
+use crate::{config::display::SHOULD_DISPLAY_RAW_VIDEO, display::annotate_video, messages};
 
 pub struct Capture {
     inner: videoio::VideoCapture,

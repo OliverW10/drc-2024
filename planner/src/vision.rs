@@ -5,7 +5,7 @@ mod obstacle;
 pub mod perspective;
 
 use crate::{
-    camera::Recorder, config::{colours, file::{Config, ConfigReader}, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
+    camera::Recorder, config::{file::{Config, ConfigReader, LineColour}, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
 };
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
@@ -31,8 +31,8 @@ pub struct Vision {
 impl Vision {
     pub fn new() -> Vision {
         let mut point_finders: Vec<Box<dyn ObjectFinder>> = Vec::new();
-        point_finders.push(Box::new(LineFinder::new(PointType::LeftLine, colours::BLUE_MASK, "blue".to_owned())));
-        point_finders.push(Box::new(LineFinder::new(PointType::RightLine, colours::YELLOW_MASK, "yellow".to_owned())));
+        point_finders.push(Box::new(LineFinder::new(PointType::LeftLine, LineColour::BLUE, "blue".to_owned())));
+        point_finders.push(Box::new(LineFinder::new(PointType::RightLine, LineColour::YELLOW, "yellow".to_owned())));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_MASK)));
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));

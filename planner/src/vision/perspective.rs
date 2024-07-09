@@ -30,7 +30,6 @@ pub fn get_perspective_points_config(config_obj: &Config) -> PerspectiveTransfor
             y: line[1],
         });
     }
-    println!("{:?}, {:?}", perspective_points_image, perspective_points_ground);
     (perspective_points_image, perspective_points_ground)
 }
 

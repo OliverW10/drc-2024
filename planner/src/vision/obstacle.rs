@@ -12,7 +12,7 @@ impl ObstacleFinder {}
 
 impl ObjectFinder for ObstacleFinder {
     fn get_points(
-        &mut self, _image: &Mat, _state: &CarState, _: &mut ConfigReader<Config>, _: &dyn PointMap, recorder: &mut Recorder
+        &mut self, _image: &Mat, _state: &CarState, _: &mut ConfigReader<Config>, _: &dyn PointMap, _: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         Ok(vec![])
     }

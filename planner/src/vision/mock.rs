@@ -21,7 +21,7 @@ fn jitter() -> Pos {
 impl ObjectFinder for FakePointProvider {
     fn get_points(
         &mut self, _: &opencv::core::Mat, _: &CarState, _: &mut ConfigReader<Config>,
-        point_map: &dyn PointMap, recorder: &mut Recorder
+        point_map: &dyn PointMap, _: &mut Recorder
     ) -> Result<Vec<Point>, opencv::Error> {
         let mut pruner = Pruner::new();
         let all_lines = vec![

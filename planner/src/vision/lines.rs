@@ -7,7 +7,7 @@ use opencv::{
 use rand::Rng;
 
 use crate::{
-    camera::Recorder, config::{colours::ColourRange, file::{Config, ConfigReader}}, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState, vision::perspective::{convert_point_relative_to_global, perspective_correct}
+    camera::Recorder, config::file::{Config, ConfigReader, LineColour}, points::{Point, PointMap, PointType, Pos}, pruner::Pruner, state::CarState, vision::perspective::{convert_point_relative_to_global, perspective_correct}
 };
 
 use super::ObjectFinder;
@@ -15,7 +15,7 @@ use super::ObjectFinder;
 // Finds points along the edges of something
 pub struct LineFinder {
     line_type: PointType,
-    colour: ColourRange,
+    colour: LineColour,
     pruner: Pruner,
     // stored between frames to reduce memory allocation
     contours: VectorOfVectorOfPoint,
@@ -23,8 +23,9 @@ pub struct LineFinder {
     name: String,
 }
 
+
 impl LineFinder {
-    pub fn new(obstacle_type: PointType, colour: ColourRange, name: String) -> LineFinder {
+    pub fn new(obstacle_type: PointType, colour: LineColour, name: String) -> LineFinder {
         LineFinder {
             contours: VectorOfVectorOfPoint::new(),
             mask: Mat::default(),
@@ -76,11 +77,11 @@ impl ObjectFinder for LineFinder {
 
         {
             puffin::profile_scope!("thresholding");
+            let config_val = config.get_value();
             in_range(
-                // &self.blurred,
                 image,
-                &self.colour.low,
-                &self.colour.high,
+                &config_val.colour_for_line(&self.colour).low,
+                &config_val.colour_for_line(&self.colour).high,
                 &mut self.mask,
             )?;
         }
