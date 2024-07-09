@@ -6,6 +6,7 @@ import sys
 
 print(f"opening {sys.argv[1]}")
 cap = cv2.VideoCapture(sys.argv[1])
+got_frame, frame = cap.read()
 
 def nothing(x):
     pass
@@ -24,13 +25,16 @@ cv2.createTrackbar('v hi', 'result',255,255,nothing)
 cv2.createTrackbar('v lo', 'result',0,255,nothing)
 
 paused = False
-
+loop_num = 0
+is_picture = True
 while(1):
-    if not paused:
+    if not paused and not is_picture:
         got_frame, frame = cap.read()
         if not got_frame:
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            print("looped")
+            print(f"looped {loop_num}")
+            loop_num += 1
+            # _, frame = cap.read()
             continue
 
     #converting to HSV

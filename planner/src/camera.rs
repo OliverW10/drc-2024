@@ -6,7 +6,7 @@ use opencv::{
 use opencv::prelude::*;
 use time::OffsetDateTime;
 
-use crate::{config::display::SHOULD_DISPLAY_RAW_VIDEO, display::annotate_video, messages};
+use crate::{config::{self, display::SHOULD_DISPLAY_RAW_VIDEO}, display::annotate_video, messages};
 
 pub struct Capture {
     inner: videoio::VideoCapture,
@@ -23,8 +23,14 @@ impl Capture {
         if !opened {
             panic!("Unable to open default camera!");
         }
-        cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0).unwrap();
-        cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
+
+        // if config::is_running_on_pi() {
+            cap.set(videoio::CAP_PROP_FRAME_WIDTH, 640.0).unwrap();
+            cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 480.0).unwrap();
+        // } else {
+        //     cap.set(videoio::CAP_PROP_FRAME_WIDTH, 480.0).unwrap();
+        //     cap.set(videoio::CAP_PROP_FRAME_HEIGHT, 640.0).unwrap();
+        // }
 
         Capture {
             inner: cap,
@@ -116,7 +122,7 @@ impl Recorder {
             println!("taking image of {}", desc);
             let now = OffsetDateTime::now_utc();
             let params = Vector::<i32>::new(); // required arguemtn
-            let _ = imwrite(format!("images/{}-{}.png", now.to_string(), desc).as_str(), img, &params);
+            let _ = imwrite(format!("images/{}-{}.png", desc, now.to_string()).as_str(), img, &params);
             self.needs.remove(desc);
         }
     }
