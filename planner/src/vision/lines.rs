@@ -41,7 +41,7 @@ impl LineFinder {
 
         let area_ratio = imgproc::contour_area_def(border_points).unwrap_or_default() / (border_points.len() as f64);
         if area_ratio < 2.0 {
-            return false;
+            return true;
         }
 
         true

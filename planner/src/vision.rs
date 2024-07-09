@@ -75,27 +75,27 @@ impl Vision {
         }
         // am .unwrap'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway
-        // {
-        //     puffin::profile_scope!("blur");
-        //     gaussian_blur(
-        //         &self.cropped,
-        //         &mut self.blurred,
-        //         Size::new(3, 3),
-        //         0.0,
-        //         0.0,
-        //         BorderTypes::BORDER_CONSTANT.into(),
-        //     )
-        //     .unwrap();
-        // }
+        {
+            puffin::profile_scope!("blur");
+            gaussian_blur(
+                &self.cropped,
+                &mut self.blurred,
+                Size::new(3, 3),
+                0.0,
+                0.0,
+                BorderTypes::BORDER_CONSTANT.into(),
+            )
+            .unwrap();
+        }
 
         {
             puffin::profile_scope!("save image frame");
-            recorder.record_image(&self.cropped, "image");
+            recorder.record_image(&self.blurred, "image");
         }
 
         {
             puffin::profile_scope!("hsv");
-            cvt_color(&self.cropped, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
+            cvt_color(&self.blurred, &mut self.hsv, ColorConversionCodes::COLOR_BGR2HSV.into(), 0).unwrap();
         }
 
         self.point_finders
