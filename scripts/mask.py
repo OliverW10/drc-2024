@@ -26,7 +26,7 @@ cv2.createTrackbar('v lo', 'result',0,255,nothing)
 
 paused = False
 loop_num = 0
-is_picture = False
+is_picture = True
 while(1):
     if not paused and not is_picture:
         got_frame, frame = cap.read()
