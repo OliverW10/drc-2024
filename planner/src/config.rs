@@ -1,5 +1,5 @@
 pub mod file {
-    use std::{fs, time::{Duration, SystemTime}};
+    use std::{fs, io, thread, time::{Duration, SystemTime}};
     use serde::{Deserialize, Serialize};
 
     use super::colours::ColourRange;
@@ -54,26 +54,30 @@ pub mod file {
     impl<T> ConfigReader<T> {
         pub fn new(filename: &str, reader: fn(&str) -> T) -> ConfigReader<T> {
             ConfigReader {
-                last_edit_time: Self::get_last_edit_time(filename),
+                last_edit_time: Self::get_last_edit_time(filename).unwrap(),
                 filename: filename.to_string(),
                 reader: reader,
                 last_value: Self::read_file(filename, reader),
             }
         }
 
-        fn get_last_edit_time(filename: &str) -> SystemTime {
-            fs::metadata(filename).and_then(|metadata| metadata.modified()).unwrap()
+        fn get_last_edit_time(filename: &str) -> Result<SystemTime, io::Error>  {
+            fs::metadata(filename).and_then(|metadata| metadata.modified())
         }
 
         pub fn get_value(&mut self) -> &T {
-            if self.last_edit_time.elapsed().unwrap() > FILE_READ_MIN {
+            if self.last_edit_time.elapsed().unwrap() < FILE_READ_MIN {
                 return &self.last_value;
             }
 
-            let new_last_edit_time = Self::get_last_edit_time(self.filename.as_str());
-            if new_last_edit_time > self.last_edit_time {
-                self.last_value = Self::read_file(self.filename.as_str(), self.reader);
-                self.last_edit_time = new_last_edit_time;
+            let new_last_edit_time_result = Self::get_last_edit_time(self.filename.as_str());
+            if let Ok(new_last_edit_time) = new_last_edit_time_result {
+                if new_last_edit_time > self.last_edit_time {
+                    println!("reading config");
+                    thread::sleep(Duration::from_millis(100));
+                    self.last_value = Self::read_file(self.filename.as_str(), self.reader);
+                    self.last_edit_time = new_last_edit_time;
+                }
             }
             &self.last_value
         }
