@@ -82,6 +82,8 @@ fn main() -> Result<()> {
 
         let network_command = network_comms.get_latest_message();
 
+        recorder.enqueue_images(&network_command);
+
         let new_points = vision.get_points_from_image(&frame, current_state, &mut perspective_config, point_map, &mut recorder);
 
         point_map.add_points(&new_points);
@@ -104,7 +106,6 @@ fn main() -> Result<()> {
 
         driver.drive(command);
 
-        recorder.take_images(network_command);
 
         network_comms.send(
             &path,

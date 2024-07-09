@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use opencv::{
     core::{Mat, MatTraitConst, Vector}, highgui, imgcodecs::imwrite, videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_PROP_POS_FRAMES}
@@ -92,29 +92,32 @@ pub struct Recorder {
     images: i32,
     blues: i32,
     yellows: i32,
-    pub frames: HashMap<String, Mat>
+    needs: HashSet<String>
 }
 
 impl Recorder {
-    pub fn take_images(&mut self, cmd: messages::command::DriveCommand) {
+    pub fn enqueue_images(&mut self, cmd: &messages::command::DriveCommand) {
         if self.images < cmd.images_frame as i32 {
             self.images += 1;
-            self.record_image(&self.frames["image"], "image"); // TODO: use enum as key's
+            self.needs.insert("image".to_owned());
         }
         if self.blues < cmd.images_blue as i32 {
             self.blues += 1;
-            self.record_image(&self.frames["blue"], "blue");
+            self.needs.insert("blue".to_owned());
         }
-        if self.images < cmd.images_yellow as i32 {
-            self.images += 1;
-            self.record_image(&self.frames["yellow"], "yellow");
+        if self.yellows < cmd.images_yellow as i32 {
+            self.yellows += 1;
+            self.needs.insert("yellow".to_owned());
         }
     }
 
-    fn record_image(&self, img: &Mat, desc: &str) {
-        println!("taking image of {}", desc);
-        let now = OffsetDateTime::now_utc();
-        let params = Vector::<i32>::new(); // required arguemtn
-        let _ = imwrite(format!("images/{}-{}.png", desc, now.to_string()).as_str(), img, &params);
+    pub fn record_image(&mut self, img: &Mat, desc: &str) {
+        if self.needs.contains(desc) {
+            println!("taking image of {}", desc);
+            let now = OffsetDateTime::now_utc();
+            let params = Vector::<i32>::new(); // required arguemtn
+            let _ = imwrite(format!("images/{}-{}.png", now.to_string(), desc).as_str(), img, &params);
+            self.needs.remove(desc);
+        }
     }
 }

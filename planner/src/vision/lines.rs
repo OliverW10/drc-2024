@@ -1,7 +1,7 @@
 use opencv::{
     core::{in_range, Mat, VecN},
     highgui,
-    imgproc::{circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes},
+    imgproc::{self, circle, cvt_color, find_contours, ColorConversionCodes, ContourApproximationModes, RetrievalModes},
     types::VectorOfVectorOfPoint,
 };
 use rand::Rng;
@@ -31,11 +31,20 @@ impl LineFinder {
             line_type: obstacle_type,
             colour: colour,
             pruner: Pruner::new(),
-            name: name
+            name: name,
         }
     }
     fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
-        border_points.len() > 100
+        if border_points.len() < 100 {
+            return false;
+        }
+
+        let area_ratio = imgproc::contour_area_def(border_points).unwrap_or_default() / (border_points.len() as f64);
+        if area_ratio < 2.0 {
+            return false;
+        }
+
+        true
     }
 
     fn points_from_contours(&self) -> Vec<opencv::core::Point> {
@@ -74,7 +83,10 @@ impl ObjectFinder for LineFinder {
                 &self.colour.high,
                 &mut self.mask,
             )?;
-            recorder.frames.insert(self.name.clone(), self.mask.clone());
+        }
+        {
+            puffin::profile_scope!(format!("save image {}", self.name));
+            recorder.record_image(&self.mask, &self.name);
         }
         {
             puffin::profile_scope!("contours");

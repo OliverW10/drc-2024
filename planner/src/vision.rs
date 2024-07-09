@@ -75,20 +75,23 @@ impl Vision {
         }
         // am .unwrap'ing because don't want opencv errors to leak outside of vision
         // and errors should be loud anyway
-        {
-            puffin::profile_scope!("blur");
-            gaussian_blur(
-                &self.cropped,
-                &mut self.blurred,
-                Size::new(3, 3),
-                0.0,
-                0.0,
-                BorderTypes::BORDER_CONSTANT.into(),
-            )
-            .unwrap();
-        }
+        // {
+        //     puffin::profile_scope!("blur");
+        //     gaussian_blur(
+        //         &self.cropped,
+        //         &mut self.blurred,
+        //         Size::new(3, 3),
+        //         0.0,
+        //         0.0,
+        //         BorderTypes::BORDER_CONSTANT.into(),
+        //     )
+        //     .unwrap();
+        // }
 
-        recorder.frames.insert("image".to_owned(), self.cropped.clone()); // TODO: does this actually copy the image?
+        {
+            puffin::profile_scope!("save image frame");
+            recorder.record_image(&self.cropped, "image");
+        }
 
         {
             puffin::profile_scope!("hsv");

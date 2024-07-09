@@ -41,8 +41,18 @@ pub fn picture_taker(ui: &mut egui::Ui, command: &mut messages::command::DriveCo
 }
 
 fn do_rsync(ip: &str) {
-    // Command::new("rsync").arg(format!("pi@raspberrypi.local:~/drc-2024/planner/images/")).arg("images/").status().expect();
-    let output = Command::new("rsync").arg(format!("../planner/images/")).arg("images/").output().expect("asdf");
+    let from_dir = if ip == "127.0.0.1" { 
+        "~/car/drc/planner/images/*.png"
+    } else {
+        "pi@raspberrypi.local:~/drc-2024/planner/images/*.png"
+    };
+
+    let output = Command::new("rsync")
+        .arg("-rv")
+        .arg(from_dir)
+        .arg("./images/")
+        .output()
+        .expect("rsync failed");
     println!("rsynced: {}", std::str::from_utf8(&output.stdout).expect("msg"));
 }
 
