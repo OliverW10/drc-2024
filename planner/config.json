@@ -14,15 +14,15 @@
         ]
     },
     "yellow_colour": {
-        "low": [43, 58, 146],
-        "high": [72, 150, 255]
+        "low": [55, 46, 148],
+        "high": [71, 255, 255]
     },
     "blue_colour": {
-        "low": [82, 89, 104],
+        "low": [86, 70, 84],
         "high": [115, 255, 255]
     },
     "drive_cfg": {
-        "odom_speed_fudge": 1.5,
-        "odom_turn_fudge": 1.0
+        "odom_speed_fudge": 6.0,
+        "odom_turn_fudge": 1.2
     }
 }

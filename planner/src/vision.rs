@@ -7,6 +7,7 @@ pub mod perspective;
 use crate::{
     camera::Recorder, config::{file::{Config, ConfigReader, LineColour}, image::{BOTTOM_CROP, TOP_CROP}}, points::{Point, PointMap, PointType}, state::CarState
 };
+use mock::FakePointProvider;
 use opencv::{
     core::{BorderTypes, Mat, MatTraitConst, Rect, Size},
     imgproc::{cvt_color, gaussian_blur, ColorConversionCodes},
@@ -37,7 +38,7 @@ impl Vision {
         // point_finders.push(Box::new(ObstacleFinder::new(PointType::Obstacle, colours::PURPLE_RED)));
         point_finders.push(Box::new(ArrowFinder::new()));
 
-        // point_finders.push(Box::new(FakePointProvider {}));
+        point_finders.push(Box::new(FakePointProvider {}));
 
         return Vision {
             point_finders: point_finders,

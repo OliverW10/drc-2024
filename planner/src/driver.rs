@@ -117,8 +117,8 @@ impl Drop for PwmDriver {
 
 const PWM_PERIOD: Duration = Duration::from_millis(20);
 const PWM_CENTER: f32 = 1400.0;
-const STEER_PWM_MAX: f32 = PWM_CENTER - 400.0;
-const STEER_PWM_MIN: f32 = PWM_CENTER + 400.0;
+const STEER_PWM_MAX: f32 = PWM_CENTER - 300.0;
+const STEER_PWM_MIN: f32 = PWM_CENTER + 300.0;
 // 75cm right, 85 left (should recalib with better center later) = 1/0.8
 const MAX_CURVATURE: f32 = 0.9;
 impl Steerer for PwmDriver {

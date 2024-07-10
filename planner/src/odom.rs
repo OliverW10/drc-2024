@@ -40,7 +40,7 @@ impl RelativeStateProvider for BlindRelativeStateProvider {
 impl BlindRelativeStateProvider {
     pub fn new() -> BlindRelativeStateProvider {
         BlindRelativeStateProvider {
-            delay: Duration::from_secs_f64(0.2),
+            delay: Duration::from_secs_f64(0.05),
             commands_queue: VecDeque::new(),
             avg: SimpleDrive { curvature: 0.0, speed: 0.0 },
         }
