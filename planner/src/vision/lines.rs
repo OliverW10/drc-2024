@@ -43,7 +43,7 @@ impl LineFinder {
         let area = imgproc::contour_area_def(border_points).unwrap_or_default();
         let border_points_num = border_points.len();
         let area_ratio = area / (border_points_num as f64);
-        println!("{area_ratio}, {area}/{border_points_num}");
+        // println!("{area_ratio}, {area}/{border_points_num}");
         if area_ratio < min_area_ratio as f64{
             return false;
         }

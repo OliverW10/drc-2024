@@ -27,6 +27,6 @@
     },
     "contour_cfg": {
         "min_boundry": 30,
-        "min_area_ratio": 1.0
+        "min_area_ratio": 0.2
     }
 }
