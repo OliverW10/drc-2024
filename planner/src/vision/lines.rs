@@ -35,26 +35,28 @@ impl LineFinder {
             name: name,
         }
     }
-    fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>) -> bool {
-        if border_points.len() < 50 {
+    fn is_valid_contour(border_points: &opencv::core::Vector<opencv::core::Point>, min_border: i32, min_area_ratio: f32) -> bool {
+        if border_points.len() < min_border as usize {
             return false;
         }
 
         let area_ratio = imgproc::contour_area_def(border_points).unwrap_or_default() / (border_points.len() as f64);
-        if area_ratio < 2.0 {
-            return true;
+        if area_ratio < min_area_ratio as f64{
+            return false;
         }
 
         true
     }
 
-    fn points_from_contours(&self) -> Vec<opencv::core::Point> {
+    fn points_from_contours(&self, config: &mut ConfigReader<Config>) -> Vec<opencv::core::Point> {
         puffin::profile_function!();
+
+        let config = config.get_value();
 
         self.contours
             .iter()
             .flat_map(|contour| {
-                if LineFinder::is_valid_contour(&contour) {
+                if LineFinder::is_valid_contour(&contour, config.contour_cfg.min_boundry, config.contour_cfg.min_area_ratio) {
                     // offset by random amount avoid always sampling the same points along the outline
                     let skip = rand::thread_rng().gen_range(0..SAMPLE_EVERY);
                     contour.iter().skip(skip).step_by(SAMPLE_EVERY).collect() // TODO: try and get this to lazy evaluate
@@ -100,7 +102,7 @@ impl ObjectFinder for LineFinder {
             )?;
         }
 
-        let image_points = self.points_from_contours();
+        let image_points = self.points_from_contours(config);
         let points = perspective_correct(&image_points, config);
         draw_mask_debug(&self.line_type.to_string(), &self.mask, &image_points)?;
 

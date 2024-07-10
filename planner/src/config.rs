@@ -23,10 +23,17 @@ pub mod file {
     }
 
     #[derive(Serialize, Deserialize, Debug)]
+    pub struct ContourConfig {
+        pub min_boundry: i32,
+        pub min_area_ratio: f32,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Config {
         pub perspective: PerspectiveConfig,
         pub yellow_colour: ColourConfig,
         pub blue_colour: ColourConfig,
+        pub contour_cfg: ContourConfig,
         pub drive_cfg: DriveConfig,
     }
 

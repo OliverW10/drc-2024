@@ -14,8 +14,8 @@
         ]
     },
     "yellow_colour": {
-        "low": [55, 46, 148],
-        "high": [71, 255, 255]
+        "low": [55, 46, 128],
+        "high": [67, 255, 255]
     },
     "blue_colour": {
         "low": [86, 70, 84],
@@ -23,6 +23,10 @@
     },
     "drive_cfg": {
         "odom_speed_fudge": 6.0,
-        "odom_turn_fudge": 1.2
+        "odom_turn_fudge": 1.0
+    },
+    "contour_cfg": {
+        "min_boundry": 30,
+        "min_area_ratio": 2.0
     }
 }
