@@ -10,7 +10,7 @@ impl Follower {
     pub fn command_to_follow_path(&self, path: &Path) -> SimpleDrive {
         puffin::profile_function!();
 
-        let lookahead_count = 5; // 4 * 0.2
+        let lookahead_count = 5.min(path.points.len()); // 4 * 0.2
         let mut curvature = 0.0;
         for point in &path.points[..lookahead_count] {
             curvature += point.curvature;
